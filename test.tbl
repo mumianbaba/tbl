@@ -1,0 +1,11 @@
+def abc(a, b)
+{
+	c = a;
+	d =b;
+	
+	return c + d;
+}
+
+k = 100;
+n = 100;
+p = abc(100, 100);
