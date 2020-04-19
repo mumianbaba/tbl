@@ -249,6 +249,21 @@ Node *read_token()
 			
 			return node;
 		}
+		if (strcmp(keyword, "true") == 0)
+		{
+			node->kind = BOOL_TRUE;
+			node->state = 1;
+
+			return node;
+		}
+
+		if (strcmp(keyword, "false") == 0)
+		{
+			node->kind = BOOL_FALSE;
+			node->state = 0;
+
+			return node;
+		}
 		
 		if(strcmp(keyword, "return") == 0)
 		{

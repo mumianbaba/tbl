@@ -47,11 +47,14 @@ enum
 	LE,
 	BE,
 	EQ,
-	AS,
 	NE,
+	AS,
 	LOG_AND,
 	LOG_NOT,
 	LOG_OR,
+	LOG_BOOL,
+	BOOL_TRUE,
+	BOOL_FALSE,
 	COMMA,
 	LEFT_PARENT,
 	RIGHT_PARENT,
@@ -100,6 +103,12 @@ typedef struct Node {
 			struct Node *left;
 			struct Node *right;
 			int opreand;
+		};
+
+		//bool ֵ
+		struct
+		{
+			int state;
 		};
 
 		struct 

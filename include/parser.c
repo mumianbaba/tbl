@@ -280,6 +280,18 @@ Node *read_string()
 	return node;
 }
 
+Node *read_bool()
+{
+	Node *node = get();
+	if (node->kind != BOOL_TRUE && node->kind != BOOL_FALSE)
+	{
+		printf("expect \"\n");
+		exit(1);
+	}
+
+	return node;
+}
+
 Node *primer_exp()
 {
 	Node *node = peek();
@@ -297,20 +309,20 @@ Node *primer_exp()
 
 	if (kind == BOOL_TRUE)
 	{
-		Node *bnode = create_node();
-		bnode->kind = BOOL_TRUE;
-		bnode->state = 1;
+		Node *node = read_bool();
+		node->kind = LOG_BOOL;
+		node->state = 1;
 
-		return bnode;
+		return node;
 	}
-	
+
 	if (kind == BOOL_FALSE)
 	{
-		Node *bnode = create_node();
-		bnode->kind = LOG_BOOL;
-		bnode->state = 0;
+		Node *node = read_bool();
+		node->kind = LOG_BOOL;
+		node->state = 0;
 
-		return bnode;
+		return node;
 	}
     
     if(kind == LEFT_PARENT)
@@ -820,7 +832,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
-				nvar->id = left->id / right->id;
+				nvar->id = pow(left->id, right->id);
 				
 				return nvar;
 			}
