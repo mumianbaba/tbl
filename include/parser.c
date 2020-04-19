@@ -297,6 +297,7 @@ Node *primer_exp()
     
     if(kind == LEFT_PARENT)
     {
+		get();
         Node *exp = Exp();
 
         if(!next_token(RIGHT_PARENT))
@@ -346,9 +347,26 @@ Node *primer_exp()
    exit(1);
 }
 
+Node *read_unary()
+{
+	Node *tok = get();
+	if(tok->kind == LOG_NOT)
+	{
+		Node *tnode  = create_node();
+		tnode->kind  = LOG_NOT;
+		tnode->order = primer_exp();
+
+		return tnode;
+
+	}
+	unget_token(tok);
+
+	return primer_exp();
+}
+
 Node *read_pow()
 {
-    Node *node = primer_exp();
+    Node *node = read_unary();
 
     Node *tok = get();
     while(tok->kind == POW)
@@ -356,7 +374,7 @@ Node *read_pow()
         Node *binary = create_node();
 
         binary->left  = node;
-        binary->right = primer_exp();
+        binary->right = read_unary();
         binary->kind  = POW;
 		node = binary;
         
@@ -410,31 +428,9 @@ Node *read_add()
     return node;
 }
 
-Node *read_binary()
-{
-    Node *node = read_add();
-
-	Node *tok = get();
-    if(tok->kind == AS)
-    {
-        Node *binary = create_node();
-        
-        binary->left = node;
-        binary->right = read_binary();
-        binary->kind = tok->kind;
-
-  		node = binary;
-        
-        return node;
-    }
-    unget_token(tok);
-
-    return node;
-}
-
 Node *CompareExp()
 {
-	Node *node = read_binary();
+	Node *node = read_add();
 	
 	Node *tok = get();
 	while(tok->kind >= LT && tok->kind <= NE)
@@ -443,7 +439,7 @@ Node *CompareExp()
         
 		binary->kind  = tok->kind;
 		binary->left  = node;
-		binary->right = read_binary();
+		binary->right = CompareExp();
 
 		tok = get();
 	}
@@ -452,25 +448,9 @@ Node *CompareExp()
 	return node;
 }
 
-Node *NotExp()
-{
-	Node *tok = get();
-	if(tok->kind == LOG_NOT)
-	{
-		Node *node  = create_node();
-        node->tkind = tok->kind;
-		node->order = CompareExp();
-
-		return node;
-	}
-	unget_token(tok);
-
-	return CompareExp();
-}
-
 Node *AndExp()
 {
-	Node *node = NotExp();
+	Node *node = CompareExp();
 	
 	Node *tok = get();
 	while(tok->kind == LOG_AND)
@@ -507,6 +487,28 @@ Node *Exp()
 	}
 	unget_token(tok);
 	
+	return node;
+}
+
+Node *read_binary()
+{
+	Node *node = Exp();
+
+	Node *tok = get();
+	if (tok->kind == AS)
+	{
+		Node *binary = create_node();
+
+		binary->left = node;
+		binary->right = read_binary();
+		binary->kind = tok->kind;
+
+		node = binary;
+
+		tok = get();
+	}
+	unget_token(tok);
+
 	return node;
 }
 
@@ -689,8 +691,8 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 		case ADD:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left  = eval(L, env);
+				Node* right = eval(R, env);
 
 				Node *nnode = create_node();
 
@@ -724,8 +726,8 @@ Node *eval(Node *node, ENVIROMENT *env)
 			
 		case DE:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left = eval(L, env);
+				Node* right = eval(R, env);
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -736,8 +738,8 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 		case MUL:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left = eval(L, env);
+				Node* right = eval(R, env);
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -747,8 +749,8 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 		case SUB:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left = eval(L, env);
+				Node* right = eval(R, env);
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -759,8 +761,8 @@ Node *eval(Node *node, ENVIROMENT *env)
 			
 		case POW:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left = eval(L, env);
+				Node* right = eval(R, env);
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -778,8 +780,8 @@ Node *eval(Node *node, ENVIROMENT *env)
 		}
 		case LOG_AND:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left  = eval(L, env);
+				Node* right = eval(R, env);
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -789,12 +791,12 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 		case LOG_OR:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left = eval(L, env);
+				Node* right = eval(R, env);
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
-				nvar->id = (int)(left->id || right->id);
+				nvar->id = (left->id || right->id) == 0.0 ? 0 : 1;
 				
 				return nvar;
 			}
@@ -809,8 +811,14 @@ Node *eval(Node *node, ENVIROMENT *env)
 			
 		case LT:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left = eval(L, env);
+				Node* right = eval(R, env);
+
+				if (left->kind != NUMBER || right->kind != NUMBER)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -820,8 +828,14 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 		case BT:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left = eval(L, env);
+				Node* right = eval(R, env);
+
+				if (left->kind != NUMBER || right->kind != NUMBER)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -832,8 +846,14 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 		case LE:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left  = eval(L, env);
+				Node* right = eval(R, env);
+
+				if (left->kind != NUMBER || right->kind != NUMBER)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -843,8 +863,14 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 		case BE:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left =  eval(L, env);
+				Node* right = eval(R, env);
+
+				if (left->kind != NUMBER || right->kind != NUMBER)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
@@ -854,11 +880,28 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 		case EQ:
 			{
-				Node* left  = L;
-				Node* right = R;
+				Node* left  = eval(L, env);
+				Node* right = eval(R, env);
+
+				if (left->kind != right->kind)
+				{
+					printf("error, can not compare kind!\n");
+					exit(1);
+				}
 				
 				Node *nvar = create_node();
 				nvar->kind = NUMBER;
+				nvar->id = 0;
+				if (left->kind == STRING)
+				{
+					if (strcmp(left->sval, right->sval) == 0)
+					{
+						nvar->id = 1;
+
+						return nvar;
+					}
+				}
+
 				nvar->id = (int)(left->id == right->id);
 				
 				return nvar;
@@ -890,7 +933,7 @@ void interpreter()
 
 	while(kind != END_LINE)
 	{
-		Node *node = Exp();
+		Node *node = read_binary();
 		if(node->kind == IDENT)
 		{
 			strcmp(node->iname, "def");

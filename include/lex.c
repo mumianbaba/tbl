@@ -178,12 +178,16 @@ Node *read_token()
 		{
 			++src;
 			node->kind = LE;
+
+			return node;
 		}
 		
 		if(*(src + 1) == '>')
 		{
 			++src;
 			node->kind = NE;
+
+			return node;
 		}
 		++src;
 
