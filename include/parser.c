@@ -294,6 +294,24 @@ Node *primer_exp()
     	
         return inode;
     }
+
+	if (kind == BOOL_TRUE)
+	{
+		Node *bnode = create_node();
+		bnode->kind = BOOL_TRUE;
+		bnode->state = 1;
+
+		return bnode;
+	}
+	
+	if (kind == BOOL_FALSE)
+	{
+		Node *bnode = create_node();
+		bnode->kind = LOG_BOOL;
+		bnode->state = 0;
+
+		return bnode;
+	}
     
     if(kind == LEFT_PARENT)
     {
@@ -507,7 +525,7 @@ Node *read_binary()
 
 		tok = get();
 	}
-	unget_token(tok);
+	unget_token(tok); 
 
 	return node;
 }
@@ -535,6 +553,10 @@ Node *interior_print(Vector *params, ENVIROMENT *env)
 		if (param_node->kind == NUMBER)
 		{
 			printf("%f", param_node->id);
+		}
+		if (param_node->kind == LOG_BOOL)
+		{
+			printf("%s", param_node->state == 1 ? "true": "false");
 		}
 
 		if (i < count - 1)
@@ -570,6 +592,38 @@ void init_interior_function()
 	fnode->actual = make_vector();
 	fnode->formal = make_vector();
 	map_put(basic_env->map, fnode->fname, fnode);
+}
+
+int convert_node(Node *node)
+{
+	if (node == NULL)
+	{
+		return 0;
+	}
+
+	if (node->kind == LOG_BOOL)
+	{
+		return node->state;
+	}
+
+	if (node->kind == NUMBER)
+	{
+		return (node->id != 0);
+	}
+
+	if (node->kind == STRING)
+	{
+		return (node->sval != NULL);
+	}
+
+	if (node->kind == FUNC)
+	{
+		return (node->body != NULL);
+	}
+
+	printf("can convert type \n");
+
+	exit(1);
 }
 
 Node *eval(Node *node, ENVIROMENT *env)
@@ -771,42 +825,52 @@ Node *eval(Node *node, ENVIROMENT *env)
 				return nvar;
 			}
 		case NUMBER:
-			{
-				return node;
-			}
+		{
+			return node;
+		}
 		case STRING:
 		{
 			return node;
 		}
+		case LOG_BOOL:
+		{
+			return node;
+		}
+
 		case LOG_AND:
 			{
 				Node* left  = eval(L, env);
 				Node* right = eval(R, env);
 				
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = (int)(left->id && right->id);
+				Node *bnode = create_node();
+				bnode->kind = LOG_BOOL;
 				
-				return nvar;
+				bnode->state = convert_node(left) && convert_node(right);
+
+				return bnode;
 			}
 		case LOG_OR:
 			{
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
 				
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = (left->id || right->id) == 0.0 ? 0 : 1;
-				
-				return nvar;
+				Node *bnode = create_node();
+
+				bnode->kind = LOG_BOOL;
+				bnode->state = bnode->state = convert_node(left) || convert_node(right);
+
+				return bnode;
 			}
 		case LOG_NOT:
 			{
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = (int)!eval(node->order, env);
-				
-				return nvar;
+				Node *bnode = create_node();
+
+				bnode->kind = LOG_BOOL;
+
+				Node *log_node = eval(node->order, env);
+				bnode->state = !convert_node(log_node);
+
+				return bnode;
 			}
 			
 		case LT:
@@ -819,12 +883,12 @@ Node *eval(Node *node, ENVIROMENT *env)
 					printf("error, compare must be number!\n");
 					exit(1);
 				}
+				Node *bnode = create_node();
+
+				bnode->kind = LOG_BOOL;
+				bnode->state = left->id <= right->id;
 				
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = (int)(left->id < right->id);
-				
-				return nvar;
+				return bnode;
 			}
 		case BT:
 			{
@@ -836,13 +900,13 @@ Node *eval(Node *node, ENVIROMENT *env)
 					printf("error, compare must be number!\n");
 					exit(1);
 				}
-				
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				
-				nvar->id = (int)(left->id > right->id);
 
-				return nvar;
+				Node *bnode = create_node();
+
+				bnode->kind = LOG_BOOL;
+				bnode->state = left->id >right->id;
+
+				return bnode;
 			}
 		case LE:
 			{
@@ -855,11 +919,12 @@ Node *eval(Node *node, ENVIROMENT *env)
 					exit(1);
 				}
 				
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = (int)(left->id <= right->id);
-				
-				return nvar;
+				Node *bnode = create_node();
+
+				bnode->kind  = LOG_BOOL;
+				bnode->state = (int)(left->id <= right->id);
+
+				return bnode;
 			}
 		case BE:
 			{
@@ -872,11 +937,12 @@ Node *eval(Node *node, ENVIROMENT *env)
 					exit(1);
 				}
 				
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = (int)(left->id >= right->id);
-				
-				return nvar;
+				Node *bnode = create_node();
+
+				bnode->kind  = LOG_BOOL;
+				bnode->state = (int)(left->id >= right->id);
+
+				return bnode;
 			}
 		case EQ:
 			{
@@ -889,22 +955,24 @@ Node *eval(Node *node, ENVIROMENT *env)
 					exit(1);
 				}
 				
-				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = 0;
+				Node *bnode = create_node();
+
+				bnode->kind = LOG_BOOL;
+				bnode->state = 0;
+
 				if (left->kind == STRING)
 				{
 					if (strcmp(left->sval, right->sval) == 0)
 					{
-						nvar->id = 1;
+						bnode->state = 1;
 
-						return nvar;
+						return bnode;
 					}
 				}
 
-				nvar->id = (int)(left->id == right->id);
+				bnode->state = (int)(left->id == right->id);
 				
-				return nvar;
+				return bnode;
 			}
 
 	#undef L
