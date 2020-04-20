@@ -1,0 +1,54 @@
+if 语句 和 while 等控制和循环语句的状态转移处理:
+
+continue 和 break 的处理，采用每一个控制结构或者循环结构的复合语句中返回状态。
+
+node->kind = BREAK; 
+node->kind = CONTINUE;
+return node; 
+
+交给最接近的一层循环捕获处理这个状态转移。
+
+
+return 语句，采用每一个控制结构或者循环结构的复合语句中返回状态。
+
+node->kind = RETURN;
+return node; 
+
+交给最接近的函数来捕获处理。
+
+case COMPOUND:
+{
+
+for(int i =0; i < vec_len(body); i++)
+{
+     Node *node = (Node*)eval(vec_get(body, i);
+
+    if(node->kind == RETURN || node->kind == BREAK|| node->kind == CONTINUE)
+    {
+         return node;
+    }
+
+}
+   
+}
+
+case FOR:
+{
+     Node *node = (Node*)eval(vec_get(body, i);
+
+    if(node->kind == RETURN)
+    {
+         return node;
+    }
+
+   if(node->kind == BREAK)
+   {
+        eval(end_statemen, env); //执行结束语句
+   }
+
+   if(node->kind == CONTINUE)
+   {
+        eval(start_statemen, env); //执行开始语句
+   }
+}
+
