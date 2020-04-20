@@ -272,6 +272,46 @@ Node *read_token()
 			return node;
 		}
 
+		if (strcmp(keyword, "if") == 0)
+		{
+			node->kind = KEYWORD_IF;
+
+			return node;
+		}
+
+		if (strcmp(keyword, "for") == 0)
+		{
+			node->kind = KEYWORD_IF;
+
+			return node;
+		}
+		if (strcmp(keyword, "while") == 0)
+		{
+			node->kind = KEYWORD_WHILE;
+
+			return node;
+		}
+		if (strcmp(keyword, "do") == 0)
+		{
+			node->kind = KEYWORD_DO;
+
+			return node;
+		}
+
+		if (strcmp(keyword, "else") == 0)
+		{
+			node->kind = KEYWORD_ELSE;
+
+			return node;
+		}
+
+		if (strcmp(keyword, "def") == 0)
+		{
+			node->kind = KEYWORD_DEF;
+
+			return node;
+		}
+
 		node->kind  = IDENT;
 		node->iname = keyword;
 		

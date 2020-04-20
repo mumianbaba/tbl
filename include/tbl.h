@@ -67,7 +67,15 @@ enum
 	BRACK_RIGHT,
 	QUOTATION,
 	IDENT,
+	KEYWORD_IF,
+	KEYWORD_FOR,
+	KEYWORD_WHILE,
+	KEYWORD_DO,
+	KEYWORD_ELSE,
+	KEYWORD_ELSEIF,
+	KEYWORD_DEF,
 	RETURN,
+	CONPOUND,
 	CONCATENATE,
 	END_STM,
 	NEW_LINE,
@@ -105,6 +113,19 @@ typedef struct Node {
 			int opreand;
 		};
 
+		struct
+		{
+			struct Node *node_condition;
+			struct Node *node_then;
+			struct Node *node_else;
+		};
+
+		//×éºÏÓï¾ä
+		struct
+		{
+			Vector *body;
+		};
+
 		//bool Öµ
 		struct
 		{
@@ -121,7 +142,7 @@ typedef struct Node {
 		{
 			Vector *actual;
 			Vector *formal;
-			Vector *body;
+			struct Node *fbody;
 			struct Node *returning;
 			char *fname;
 		};

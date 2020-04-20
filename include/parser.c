@@ -21,6 +21,7 @@ static INLINE_CALL call_list[] =
 	{"print", interior_print}
 };
 
+//需要支持闭包，while(kind == ()) xxx, 把函数节点拼接起来
 Node *read_func_call(Node *node)
 {
 	if(peek()->kind == RIGHT_PARENT)
@@ -160,47 +161,150 @@ Node *read_function_args(Node *node)
 	}
 }
 
-Vector *read_compution_exp(Vector *body)
+Node *read_condition()
 {
-	while(1)
-	{
-		Node *tok = Exp();
-		
-		vec_push(body, tok);
-		
-		if(!next_token(END_STM))
-		{
-			printf("expect ;\n");
+	int kind = peek()->kind;
 
-			exit(1);
-		}
-		
-		int kind = peek()->kind;
-		if(kind == RIGHT_BRACE)
-		{
-			return body;
-		}
+	//条件语句的条件只能是以下的形式
+	if (kind == IDENT || kind == FUNC || kind == BOOL_FALSE || kind == BOOL_FALSE)
+	{
+		return read_binary();
 	}
+
+	printf("error unexpect kind\n");
+
+	exit(1);
 }
 
-Node *read_function_body(Node *node)
+Node *read_compound_exp()
 {
-	Node *tok = get();
-	if(tok->kind != LEFT_BRACE)
+	int kind = get()->kind;
+	if (kind != LEFT_BRACE)
 	{
 		printf("expect {\n");
 		exit(1);
 	}
 
-	read_compution_exp(node->body);
-	
-	if(!next_token(RIGHT_BRACE))
+	Node *compund_node = create_node();
+
+	compund_node->kind = CONPOUND;
+
+	Vector *list = make_vector();
+
+	kind = peek()->kind;
+	while(kind != RIGHT_BRACE)
+	{
+		Node *node = read_stmt();
+
+		vec_push(list, node);
+
+		kind = peek()->kind;
+	}
+
+	kind = get()->kind;
+	if (kind != LEFT_BRACE)
 	{
 		printf("expect }\n");
 		exit(1);
 	}
-	
-	return node;
+
+	compund_node->body = list;
+
+	return compund_node;
+}
+
+Node *read_stmt()
+{
+	int kind = peek()->kind;
+	switch (kind)
+	{
+		case KEYWORD_IF: return  read_if_exp();
+		case KEYWORD_FOR: return read_for_exp();
+		case KEYWORD_DO: return read_dowhile_exp();
+		case LEFT_BRACE: return read_compound_exp();
+	}
+
+	if (kind == IDENT)
+	{
+		Node *node = read_binary();
+
+		if (!next_token(END_STM))
+		{
+			printf("error unkown ;\n");
+			exit(1);
+		}
+
+		return node;
+	}
+
+	printf("error unkown statement\n");
+	exit(1);
+}
+
+Node *read_if_exp()
+{
+	Node *tok = get();
+	if (tok->kind != KEYWORD_IF)
+	{
+		printf("error, not an if exp\n");
+
+		exit(1);
+	}
+
+	Node *ifnode = create_node();
+
+	ifnode->node_condition = read_condition();;
+	ifnode->node_then = read_stmt();
+
+	Node *tok = get();
+	if (tok->kind == KEYWORD_ELSE)
+	{
+		ifnode->node_else = read_stmt();
+
+		return ifnode;
+	}
+	unget_token(tok);
+
+	return ifnode;
+}
+
+Node *read_while_exp()
+{
+	Node *tok = get();
+	if (tok->kind != KEYWORD_WHILE)
+	{
+		printf("error, not an if exp\n");
+
+		exit(1);
+	}
+
+	return tok;
+}
+
+Node *read_dowhile_exp()
+{
+	Node *tok = get();
+	if (tok->kind != KEYWORD_DO)
+	{
+		printf("error, not an if exp\n");
+
+		exit(1);
+	}
+
+	return tok;
+}
+
+Node *read_for_exp()
+{
+	Node *tok = get();
+	if (tok->kind != KEYWORD_FOR)
+	{
+		printf("error, not an if exp\n");
+
+		exit(1);
+	}
+
+	return tok;
 }
 
 Node *read_function_def()
@@ -208,30 +312,12 @@ Node *read_function_def()
 	Node *node    = create_node();
 	node->actual  = make_vector(); 
 	node->formal  = make_vector(); 
-	node->body    = make_vector();
+	node->fbody   = NULL;
 	
 	read_function_name(node);
 	
 	map_put(basic_env->map, node->fname, node);
-	
-	Node *tok = get();
-	if(tok->kind != LEFT_PARENT)
-	{
-		printf("expect (\n");
-		exit(1);
-	}
-	
-	read_function_args(node);
-	
-	if(!next_token(RIGHT_PARENT))
-	{
-		printf("expect )\n");
-		exit(1);
-	}
-	
-	read_function_body(node);
-	
-	map_put(basic_env->map, node->fname, node);
+	node->fbody = read_compound_exp();
 
 	return node;
 }
@@ -673,6 +759,19 @@ Node *eval(Node *node, ENVIROMENT *env)
 				
 			return node->left;
 		}
+
+		case CONPOUND:
+		{
+			ENVIROMENT *new_env = make_env();
+			new_env->parent = env;
+			
+			int i = 0;
+			for (i = 0; i < vec_len(node->body); i++)
+			{
+				Node *cnode = (Node*)vec_get(node->body, i);
+				eval(cnode, env);
+			}
+		}
 		
 		case FUNC:
 		{
@@ -1009,28 +1108,76 @@ void init_parser(const char *exp)
 //把所有节点放到开始节点中 
 void interpreter()
 {
-	int kind = peek()->kind;
 
+	//可以把所有的节点存起来， 再做处理，这里是边解释，边执行。
+	Vector *vast = make_vector();
+
+	int kind = peek()->kind;
 	while(kind != END_LINE)
 	{
-		Node *node = read_binary();
-		if(node->kind == IDENT)
+		switch (kind)
 		{
-			strcmp(node->iname, "def");
-			
-			read_function_def();
+			case KEYWORD_DEF:
+			{
+				read_function_def();
 
-			continue;
+				break;
+			}
+
+			case KEYWORD_IF:
+			{
+				Node *node = read_if_exp();
+
+				eval(node, basic_env);
+
+				break;
+			}
+
+			case KEYWORD_FOR:
+			{
+				Node *node = read_for_exp();
+
+				eval(node, basic_env);
+
+				break;
+			}
+
+			case KEYWORD_DO:
+			{
+				Node *node = read_dowhile_exp();
+
+				eval(node, basic_env);
+
+				break;
+			}
+
+			case IDENT:
+			case FUNC:
+			{
+				Node *node = read_binary();
+
+				if (!next_token(END_STM))
+				{
+					printf("expect ;\n");
+
+					exit(1);
+				}
+
+				eval(node, basic_env);
+
+				break;
+			}
+
+			//允许空语句
+			case END_STM: break;
+
+			default:
+			{
+				printf("un epxpect kind!\n");
+				exit(1);
+				break;
+			}
 		}
-		
-		if(!next_token(END_STM))
-		{
-			printf("expect ;\n");
-
-			exit(1);
-		}
-
-		eval(node, basic_env);
 
 		kind = peek()->kind;
 	}
