@@ -13,9 +13,13 @@ Node *read_mul();
 Node *read_add();
 Node *read_binary();
 Node *CompareExp();
-Node *NotExp();
+Node *read_if_exp();
+Node *read_for_exp();
+Node *read_dowhile_exp();
+Node *read_compound_exp();
 Node *AndExp();
 Node *Exp();
+Node *read_stmt();
 Node *interior_print(Vector *params, ENVIROMENT *env);
 
 Node *eval(Node *node, ENVIROMENT *env);

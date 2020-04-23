@@ -196,7 +196,7 @@ Node *read_token()
 	
 	if(*src == '>')
 	{
-		node->kind = LT;
+		node->kind = BT;
 		
 		if(*(src + 1) == '=')
 		{

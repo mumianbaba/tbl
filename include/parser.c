@@ -256,7 +256,7 @@ Node *read_if_exp()
 	ifnode->node_condition = read_condition();;
 	ifnode->node_then = read_stmt();
 
-	Node *tok = get();
+	tok = get();
 	if (tok->kind == KEYWORD_ELSE)
 	{
 		ifnode->node_else = read_stmt();
@@ -553,9 +553,11 @@ Node *CompareExp()
 	{
 		Node *binary = create_node();
         
-		binary->kind  = tok->kind;
 		binary->left  = node;
 		binary->right = CompareExp();
+		binary->kind = tok->kind;
+
+		node = binary;
 
 		tok = get();
 	}
@@ -997,7 +999,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node *bnode = create_node();
 
 				bnode->kind = LOG_BOOL;
-				bnode->state = left->id <= right->id;
+				bnode->state = left->id < right->id;
 				
 				return bnode;
 			}
@@ -1015,7 +1017,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node *bnode = create_node();
 
 				bnode->kind = LOG_BOOL;
-				bnode->state = left->id >right->id;
+				bnode->state = left->id > right->id;
 
 				return bnode;
 			}
