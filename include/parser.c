@@ -262,7 +262,22 @@ Node *read_if_exp()
 
 	Node *ifnode = create_node();
 
+	tok = get();
+	if (tok->kind != LEFT_PARENT)
+	{
+		printf("error, expect (");
+
+		exit(1);
+	}
 	ifnode->node_condition = read_condition();;
+	tok = get();
+	if (tok->kind != RIGHT_PARENT)
+	{
+		printf("error, expect (");
+
+		exit(1);
+	}
+
 	ifnode->node_then = read_stmt();
 
 	tok = get();
@@ -793,6 +808,22 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 			
 			return node_t;
+		}
+
+		case KEYWORD_IF:
+		{
+			Node *condition = eval(node->node_condition, env);
+			if (condition->state == 1)
+			{
+				eval(node->node_then, env);
+			}
+			else
+			{
+				if (node->node_else)
+				{
+					eval(node->node_else, env);
+				}
+			}
 		}
 
 		case AS:
