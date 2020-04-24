@@ -32,6 +32,13 @@ Node *read_func_call(Node *node)
 	node->formal = make_vector(); //
 	
 	Node *gnode  = map_get(basic_env->map, node->fname);
+
+	if (gnode == NULL)
+	{
+		printf("error, undefine function :%s\n", node->fname);
+
+		exit(1);
+	}
 	node->actual = gnode->actual;
 	
 	int narg = 0; //用来判断参数的位置 
@@ -202,7 +209,7 @@ Node *read_compound_exp()
 	}
 
 	kind = get()->kind;
-	if (kind != LEFT_BRACE)
+	if (kind != RIGHT_BRACE)
 	{
 		printf("expect }\n");
 		exit(1);
@@ -222,6 +229,8 @@ Node *read_stmt()
 		case KEYWORD_FOR: return read_for_exp();
 		case KEYWORD_DO: return read_dowhile_exp();
 		case LEFT_BRACE: return read_compound_exp();
+
+		case RETURN: return read_return();
 	}
 
 	if (kind == IDENT)
@@ -309,12 +318,38 @@ Node *read_for_exp()
 
 Node *read_function_def()
 {
+	Node *tok = get();
+	if (tok->kind != KEYWORD_DEF)
+	{
+		printf("error, not an if exp\n");
+
+		exit(1);
+	}
+
 	Node *node    = create_node();
 	node->actual  = make_vector(); 
 	node->formal  = make_vector(); 
 	node->fbody   = NULL;
 	
 	read_function_name(node);
+
+	tok = get();
+	if (tok->kind != LEFT_PARENT)
+	{
+		printf("error, not an if exp\n");
+
+		exit(1);
+	}
+
+	read_function_args(node);
+
+	tok = get();
+	if (tok->kind != RIGHT_PARENT)
+	{
+		printf("error, not an if exp\n");
+
+		exit(1);
+	}
 	
 	map_put(basic_env->map, node->fname, node);
 	node->fbody = read_compound_exp();
@@ -732,7 +767,24 @@ Node *eval(Node *node, ENVIROMENT *env)
 	{
 		case IDENT:
 		{
-			Node *node_t = map_get(env->map, node->iname);
+
+			ENVIROMENT *nenv = env;
+			Node *node_t = NULL;
+			while (nenv)
+			{
+				node_t = map_get(nenv->map, node->iname);
+				if (node_t)
+				{
+					break;
+				}
+
+				if (nenv->parent == NULL)
+				{
+					break;
+				}
+
+				nenv = nenv->parent;
+			}
 			
 			if(node_t == NULL)
 			{
@@ -836,9 +888,9 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 			
 			//取出函数的定义执行
-			for(i = 0; i < vec_len(fnode->body); i++)
+			for(i = 0; i < vec_len(fnode->fbody->body); i++)
 			{
-				Node *vnode = (Node*)vec_get(fnode->body, i);
+				Node *vnode = (Node*)vec_get(fnode->fbody->body, i);
 				
 				if(vnode->kind == RETURN)
 				{
@@ -1110,7 +1162,6 @@ void init_parser(const char *exp)
 //把所有节点放到开始节点中 
 void interpreter()
 {
-
 	//可以把所有的节点存起来， 再做处理，这里是边解释，边执行。
 	Vector *vast = make_vector();
 

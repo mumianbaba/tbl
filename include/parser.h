@@ -17,6 +17,7 @@ Node *read_if_exp();
 Node *read_for_exp();
 Node *read_dowhile_exp();
 Node *read_compound_exp();
+Node *read_return();
 Node *AndExp();
 Node *Exp();
 Node *read_stmt();
