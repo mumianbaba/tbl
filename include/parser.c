@@ -1142,7 +1142,8 @@ Node *eval(Node *node, ENVIROMENT *env)
 			
 			node->actual = fnode->actual;
 
-			node->body = fnode->body;
+			node->fbody = fnode->fbody;
+			
 			map_put(new_env->map, node->fname, node);
 			
 			int i = 0;
