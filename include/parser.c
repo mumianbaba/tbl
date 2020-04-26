@@ -233,6 +233,7 @@ Node *read_stmt()
 		case KEYWORD_WHILE: return read_while_exp();
 		case KEYWORD_DO: return read_dowhile_exp();
 		case LEFT_BRACE: return read_compound_exp();
+		case KEYWORD_BREAK: return read_break();
 
 		case RETURN: return read_return();
 	}
@@ -502,6 +503,24 @@ Node *read_return()
 		exit(1);
 	}
 	
+	return node;
+}
+
+Node *read_break()
+{
+	Node *node = get();
+	if (node->kind != KEYWORD_BREAK)
+	{
+		printf("expect break\n");
+		exit(1);
+	}
+
+	if (!next_token(END_STM))
+	{
+		printf("expect ;\n");
+		exit(1);
+	}
+
 	return node;
 }
 
@@ -933,7 +952,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 			
 			if (convert_node(condition)) 
 			{
-				if(node->node_then->kind == RETURN)
+				if(node->node_then->kind == RETURN || node->node_then->kind ==  KEYWORD_BREAK)
 				{
 					return node->node_then;
 				}
@@ -944,7 +963,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 			{
 				if (node->node_else)
 				{
-					if(node->node_else->kind == RETURN)
+					if(node->node_else->kind == RETURN || node->node_else->kind == KEYWORD_BREAK)
 					{
 						return node->node_else;
 					}
@@ -967,8 +986,19 @@ Node *eval(Node *node, ENVIROMENT *env)
 				{
 					return node->for_body;
 				}
+
+				if (node->for_body->kind == KEYWORD_BREAK)
+				{
+					break;
+				}
 				
 			    Node *ret = eval(node->for_body, env);
+
+				if (ret && ret->kind == KEYWORD_BREAK)
+				{
+					break;
+				}
+
 			    if(ret && ret->kind == RETURN)
 			    {
 			    	return ret;
@@ -993,7 +1023,18 @@ Node *eval(Node *node, ENVIROMENT *env)
 					return node->while_body;
 				}
 				
+				if (node->while_body->kind == KEYWORD_BREAK)
+				{
+					break;
+				}
+
 			    Node *ret = eval(node->while_body, env);
+				if (ret && ret->kind == KEYWORD_BREAK)
+				{
+
+					break;
+				}
+
 			    if(ret && ret->kind == RETURN)
 			    {
 			    	
@@ -1015,6 +1056,11 @@ Node *eval(Node *node, ENVIROMENT *env)
 				{
 					return node->while_body;
 				}
+
+				if (node->while_body->kind == KEYWORD_BREAK)
+				{
+					break;
+				}
 				
 			    Node *ret = eval(node->while_body, env);
 			    if(ret && ret->kind == RETURN)
@@ -1030,7 +1076,6 @@ Node *eval(Node *node, ENVIROMENT *env)
 			
 					return ret_node;
 				}
-				 
 			}
 			break;
 	    }
@@ -1091,14 +1136,14 @@ Node *eval(Node *node, ENVIROMENT *env)
 			for (i = 0; i < vec_len(node->body); i++)
 			{
 				Node *cnode = (Node*)vec_get(node->body, i);
-				if(cnode->kind == RETURN)
+				if(cnode->kind == RETURN || cnode->kind == KEYWORD_BREAK)
 				{
 				 	return cnode;
 				}
 				
 				Node *ret_n = eval(cnode, env);
 				
-				if(ret_n && ret_n->kind == RETURN)
+				if(ret_n && (ret_n->kind == RETURN || ret_n->kind == KEYWORD_BREAK))
 				{
 					return ret_n;
 				}

@@ -280,6 +280,13 @@ Node *read_token()
 			return node;
 		}
 
+		if (strcmp(keyword, "break") == 0)
+		{
+			node->kind = KEYWORD_BREAK;
+
+			return node;
+		}
+
 		if (strcmp(keyword, "for") == 0)
 		{
 			node->kind = KEYWORD_FOR;
