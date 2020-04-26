@@ -11,6 +11,7 @@ static const char *src;
 static const char *ppre;
 
 const char *skip(const char *in);
+const char *skip_block(const char *data, const char *start, const char *end);
 double read_number();
 char *read_keyword();
 char *read_str();

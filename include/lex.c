@@ -15,6 +15,27 @@ const char *skip(const char *in)
 	return in;
 }
 
+const char *skip_block(const char *data, const char *start, const char *end)
+{
+	const char *s1 = strstr(data, start);
+	if (!s1)
+	{
+		return NULL;
+	}
+
+	s1 = s1 + strlen(start);
+
+	const char *s2 = strstr(s1, end);
+	if (!s2)
+	{
+		return NULL;
+	}
+
+	s2 = s2 + strlen(end);
+
+	return s2;
+}
+
 double read_number()
 {
 	double sum = 0;
@@ -143,6 +164,34 @@ Node *read_token()
 	{
 		++src;
 		node->kind = SUB;
+
+		if (*(src) == '/')
+		{
+			src = skip_block(src, "/", "\n");
+
+			if (src == NULL)
+			{
+				printf("single annotation mismatching!");
+				exit(1);
+			}
+
+			src = skip(src);
+			return read_token();
+		}
+
+		if (*(src) == '*')
+		{
+			src = skip_block(src, "*", "*/");
+
+			if (src == NULL)
+			{
+				printf("multi annotation mismatching!");
+				exit(1);
+			}
+
+			src = skip(src);
+			return read_token();
+		}
 
 		return node;
 	}
