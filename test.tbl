@@ -1,11 +1,74 @@
-def abc(a, b)
+// test fb function
+
+print("---------- test fb function --------------");
+def fb(n)
 {
-	c = a;
-	d =b;
-	
-	return c + d;
+	if(n == 1 or n == 2)
+	{
+	   return n;
+	}
+
+   return fb(n - 1) + fb(n - 2);
 }
 
-k = 100;
+n = fb(5);
+print("n=", n);
+
+print("---------- test while --------------");
+
+//test while
+
 n = 100;
-p = abc(100, 100);
+while(n>0)
+{
+   print("n", n);
+   
+   n = n -1;
+}
+
+print("--------test do while----------------");
+
+//test do while
+
+n = 100;
+do
+{
+   print("n", n);
+   n = n-1;
+}while(n < 0);
+
+
+
+print("------------ test for ------------");
+//test for
+for(i = 0; i < 100; i = i + 1)
+{
+   print("i", i);
+}
+
+
+print("---------- test string --------------");
+//test string
+
+str = "hello" + "world!";
+print("str", str);
+
+//test if
+print("--------- test if ---------------");
+
+if(true)
+{
+	print("hello");
+}
+
+//test logic
+print("----------test logic--------------");
+
+a = 1 > 3 or 2 < 4;
+print(a);
+
+a = 1 < 3 and 3 > 4;
+print(a);
+
+print("test finished!----");
+
