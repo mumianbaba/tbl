@@ -75,6 +75,7 @@ enum
 	KEYWORD_ELSEIF,
 	KEYWORD_DEF,
 	RETURN,
+	KRYWORD_NULL,
 	CONPOUND,
 	CONCATENATE,
 	END_STM,
@@ -111,6 +112,20 @@ typedef struct Node {
 			struct Node *left;
 			struct Node *right;
 			int opreand;
+		};
+		
+		struct
+		{
+			struct Node *while_condition;
+			struct Node *while_body;
+		};
+		
+		struct 
+		{
+			struct Node *for_begin;
+			struct Node *for_condition;
+			struct Node *for_body;
+			struct Node *for_end;
 		};
 
 		struct

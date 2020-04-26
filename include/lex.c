@@ -158,13 +158,13 @@ Node *read_token()
 	//= Лђеп == 
 	if(*src == '=')
 	{
+		++src;
 		node->kind = AS;
-		if( *(src + 1) == '=')
+		if( *(src) == '=')
 		{
 			++src;
 			node->kind = EQ;
 		}
-		++src;
 
 		return node;
 	}
@@ -172,9 +172,11 @@ Node *read_token()
 	//<
 	if(*src == '<')
 	{
+		++src;
+
 		node->kind = LT;
 	
-		if(*(src + 1) == '=')
+		if(*(src) == '=')
 		{
 			++src;
 			node->kind = LE;
@@ -182,29 +184,27 @@ Node *read_token()
 			return node;
 		}
 		
-		if(*(src + 1) == '>')
+		if(*(src) == '>')
 		{
 			++src;
 			node->kind = NE;
 
 			return node;
 		}
-		++src;
 
 		return node;
 	}
 	
 	if(*src == '>')
 	{
+		++src;
 		node->kind = BT;
 		
-		if(*(src + 1) == '=')
+		if(*(src) == '=')
 		{
 			++src;
 			node->kind = BE;
 		}
-
-		++src;
 
 		return node;
 	}
@@ -255,7 +255,8 @@ Node *read_token()
 			node->state = 1;
 
 			return node;
-		}
+		} 
+		
 
 		if (strcmp(keyword, "false") == 0)
 		{
@@ -281,7 +282,7 @@ Node *read_token()
 
 		if (strcmp(keyword, "for") == 0)
 		{
-			node->kind = KEYWORD_IF;
+			node->kind = KEYWORD_FOR;
 
 			return node;
 		}
@@ -338,7 +339,7 @@ Node *read_token()
 		node->kind = COMMA;
 		return node;
 	}
-
+	
 	return node;
 }
 
@@ -409,7 +410,7 @@ void init_lex(const char *exp)
 
 Node *create_node()
 {
-	Node *node = (Node*)malloc(sizeof(Node));
+	Node *node = (Node*)calloc(1, sizeof(Node));
 	
 	return node;
 }

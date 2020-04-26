@@ -51,7 +51,7 @@ Node *read_func_call(Node *node)
 			exit(1);
 		}
 
-		Node *tok = Exp();
+		Node *tok = read_binary();
 		
 		vec_push(node->formal, tok);
 		
@@ -68,9 +68,11 @@ Node *read_func_call(Node *node)
 			return node;
 		}
 		
+		printf("kind = %d\n", ttok->kind);
 		printf("error token\n");
 
 		exit(1);
+		
 	}
 	
 	return node;
@@ -162,6 +164,7 @@ Node *read_function_args(Node *node)
 			return node;
 		}
 		
+		printf("kind = %d\n", tok->kind);
 		printf("error token\n");
 
 		exit(1);
@@ -173,12 +176,12 @@ Node *read_condition()
 	int kind = peek()->kind;
 
 	//条件语句的条件只能是以下的形式
-	if (kind == IDENT || kind == FUNC || kind == BOOL_FALSE || kind == BOOL_FALSE)
+	if (kind == IDENT || kind == FUNC || kind == BOOL_TRUE || kind == BOOL_FALSE || NUMBER)
 	{
 		return read_binary();
 	}
 
-	printf("error unexpect kind\n");
+	printf("error unexpect kind: %d\n", kind);
 
 	exit(1);
 }
@@ -246,7 +249,7 @@ Node *read_stmt()
 		return node;
 	}
 
-	printf("error unkown statement\n");
+	printf("error unkown statement: %d\n", kind);
 	exit(1);
 }
 
@@ -261,6 +264,10 @@ Node *read_if_exp()
 	}
 
 	Node *ifnode = create_node();
+	ifnode->kind = KEYWORD_IF;
+	
+	ifnode->node_then = NULL;
+	ifnode->node_else = NULL;
 
 	tok = get();
 	if (tok->kind != LEFT_PARENT)
@@ -269,11 +276,12 @@ Node *read_if_exp()
 
 		exit(1);
 	}
-	ifnode->node_condition = read_condition();;
+
+	ifnode->node_condition = read_condition();
 	tok = get();
 	if (tok->kind != RIGHT_PARENT)
 	{
-		printf("error, expect (");
+		printf("error, expect )");
 
 		exit(1);
 	}
@@ -301,8 +309,31 @@ Node *read_while_exp()
 
 		exit(1);
 	}
+	
+	tok = get();
+	if (tok->kind != LEFT_PARENT)
+	{
+		printf("error, expect (");
 
-	return tok;
+		exit(1);
+	}
+	
+	Node *while_node = create_node();
+	while_node->kind = KEYWORD_WHILE;
+
+	while_node->while_condition = read_condition();
+	
+	tok = get();
+	if (tok->kind != RIGHT_PARENT)
+	{
+		printf("error, expect )");
+
+		exit(1);
+	}
+
+	while_node->while_body = read_stmt();
+
+	return while_node;
 }
 
 Node *read_dowhile_exp()
@@ -314,8 +345,46 @@ Node *read_dowhile_exp()
 
 		exit(1);
 	}
+	
+	Node *while_node = create_node();
+	while_node->kind = KEYWORD_DO;
+	while_node->while_body = read_stmt();
+	
+	tok = get();
+	if (tok->kind != KEYWORD_WHILE)
+	{
+		printf("error, expect while");
 
-	return tok;
+		exit(1);
+	}
+	
+	tok = get();
+	if (tok->kind != LEFT_PARENT)
+	{
+		printf("error, expect (");
+
+		exit(1);
+	}
+	
+	while_node->while_condition = read_condition();
+	
+	tok = get();
+	if (tok->kind != RIGHT_PARENT)
+	{
+		printf("error, expect )");
+
+		exit(1);
+	}
+	
+	tok = get();
+	if (tok->kind != END_STM)
+	{
+		printf("error, expect; ");
+
+		exit(1);
+	}
+
+	return while_node;
 }
 
 Node *read_for_exp()
@@ -327,8 +396,51 @@ Node *read_for_exp()
 
 		exit(1);
 	}
+	
+	Node *fornode = create_node();
+	fornode->kind = KEYWORD_FOR;
 
-	return tok;
+	tok = get();
+	if (tok->kind != LEFT_PARENT)
+	{
+		printf("error, expect (");
+
+		exit(1);
+	}
+
+	fornode->for_begin = read_binary();
+
+	tok = get();
+	if (tok->kind != END_STM)
+	{
+		printf("error, expect;");
+
+		exit(1);
+	}
+	
+	fornode->for_condition = read_condition();
+
+	tok = get();
+	if (tok->kind != END_STM)
+	{
+		printf("error, expect;");
+
+		exit(1);
+	}
+
+	fornode->for_end = read_binary();
+
+	tok = get();
+	if (tok->kind != RIGHT_PARENT)
+	{
+		printf("error, expect)");
+
+		exit(1);
+	}
+	
+	fornode->for_body = read_stmt();
+
+	return fornode;
 }
 
 Node *read_function_def()
@@ -380,8 +492,8 @@ Node *read_return()
 		printf("expect return\n");
 		exit(1);
 	}
-	
-	node->order = Exp();
+
+	node->order = read_binary();
 	
 	if(!next_token(END_STM))
 	{
@@ -556,13 +668,13 @@ Node *read_mul()
     Node *node = read_pow();
 
  	Node *tok = get();
-    while(tok->kind == MUL)
+    while(tok->kind == MUL || tok->kind == SUB)
     {
         Node *binary = create_node();
 
         binary->left = node;
         binary->right = read_pow();
-        binary->kind = MUL;
+        binary->kind = tok->kind;
 		node = binary;
         
         tok = get();
@@ -577,13 +689,13 @@ Node *read_add()
 	Node *node = read_mul();
 
     Node *tok = get();
-	while(tok->kind == ADD)
+	while(tok->kind == ADD || tok->kind == DE)
 	{
 		Node *binary = create_node();
 
 		binary->left  = node;
 		binary->right = read_mul();
-		binary->kind  = ADD;
+		binary->kind  = tok->kind;
 		
 		node = binary;
         
@@ -709,9 +821,14 @@ Node *interior_print(Vector *params, ENVIROMENT *env)
 			printf("%s", param_node->state == 1 ? "true": "false");
 		}
 
+		if (param_node->kind == KRYWORD_NULL)
+		{
+			printf("nil");
+		}
+
 		if (i < count - 1)
 		{
-			printf(", ");
+			printf(" ");
 		}
 	}
 
@@ -782,7 +899,6 @@ Node *eval(Node *node, ENVIROMENT *env)
 	{
 		case IDENT:
 		{
-
 			ENVIROMENT *nenv = env;
 			Node *node_t = NULL;
 			while (nenv)
@@ -790,7 +906,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 				node_t = map_get(nenv->map, node->iname);
 				if (node_t)
 				{
-					break;
+					return node_t;
 				}
 
 				if (nenv->parent == NULL)
@@ -813,21 +929,129 @@ Node *eval(Node *node, ENVIROMENT *env)
 		case KEYWORD_IF:
 		{
 			Node *condition = eval(node->node_condition, env);
-			if (condition->state == 1)
+			
+			if (convert_node(condition)) 
 			{
-				eval(node->node_then, env);
+				if(node->node_then->kind == RETURN)
+				{
+					return node->node_then;
+				}
+				
+				return eval(node->node_then, env);
 			}
 			else
 			{
 				if (node->node_else)
 				{
-					eval(node->node_else, env);
+					if(node->node_else->kind == RETURN)
+					{
+						return node->node_else;
+					}
+					return eval(node->node_else, env);
 				}
 			}
+
+			break;
 		}
+		
+		case KEYWORD_FOR:
+		{
+			Node *begin = eval(node->for_begin, env);
+			
+			Node *condition = eval(node->for_condition, env);
+			
+			while (convert_node(condition)) 
+			{
+				if(node->for_body->kind == RETURN)
+				{
+					return node->for_body;
+				}
+				
+			    Node *ret = eval(node->for_body, env);
+			    if(ret && ret->kind == RETURN)
+			    {
+			    	return ret;
+				}
+				
+				eval(node->for_end, env);
+				
+				condition = eval(node->for_condition, env);
+			}
+
+			break;
+		}
+		
+		case KEYWORD_WHILE:
+		{
+			Node *condition = eval(node->while_condition, env);
+			
+			while (convert_node(condition)) 
+			{
+				if(node->while_body->kind == RETURN)
+				{
+					return node->while_body;
+				}
+				
+			    Node *ret = eval(node->while_body, env);
+			    if(ret && ret->kind == RETURN)
+			    {
+			    	
+			    	return ret;
+				}
+				
+				condition = eval(node->while_condition, env);
+			}
+			
+			break;
+		}
+		
+		case KEYWORD_DO:
+		{
+			Node *condition = NULL;
+			while(1)
+			{
+				if(node->while_body->kind == RETURN)
+				{
+					return node->while_body;
+				}
+				
+			    Node *ret = eval(node->while_body, env);
+			    if(ret && ret->kind == RETURN)
+			    {
+			    	return ret;
+				}
+				
+				condition = eval(node->while_condition, env);
+				if(convert_node(condition))
+				{
+					Node *ret_node = create_node();
+					ret_node->kind = KRYWORD_NULL; 
+			
+					return ret_node;
+				}
+				 
+			}
+
+			Node *ret_node = create_node();
+			ret_node->kind = KRYWORD_NULL; 
+			
+			return ret_node;
+	    }
 
 		case AS:
 		{
+			if(node->right->kind == KRYWORD_NULL)
+			{
+				printf(" %s = null !", (node->left->iname));
+				
+				node->left->type = node->right->kind;
+				node->left->ival = node->right;
+
+				map_put(env->map, node->left->iname, node->left->ival);
+				
+				return node->left;
+			}
+
 			Node *right = eval(node->right, env);
 	
 			if(node->left->kind != IDENT)
@@ -837,25 +1061,56 @@ Node *eval(Node *node, ENVIROMENT *env)
 				exit(1);
 			}
 
+			ENVIROMENT *nenv = env;
+			Node *node_t = NULL;
+			while (nenv)
+			{
+				node_t = map_get(nenv->map, node->left->iname);
+				if (node_t)
+				{
+					break;
+				}
+
+				if (nenv->parent == NULL)
+				{
+					nenv = env;
+					break;
+				}
+
+				nenv = nenv->parent;
+			}
+			
 			node->left->type = right->kind;
 			node->left->ival = right;
 
-			map_put(env->map, node->left->iname, node->left->ival);
+			map_put(nenv->map, node->left->iname, node->left->ival);
 				
 			return node->left;
 		}
 
 		case CONPOUND:
 		{
-			ENVIROMENT *new_env = make_env();
-			new_env->parent = env;
-			
 			int i = 0;
 			for (i = 0; i < vec_len(node->body); i++)
 			{
 				Node *cnode = (Node*)vec_get(node->body, i);
-				eval(cnode, env);
+				if(cnode->kind == RETURN)
+				{
+				 	return cnode;
+				}
+				
+				Node *ret_n = eval(cnode, env);
+				
+				if(ret_n && ret_n->kind == RETURN)
+				{
+					return ret_n;
+				}
 			}
+			
+			Node *ret_node = create_node();
+			ret_node->kind = KRYWORD_NULL; 
+			
+			return ret_node;
 		}
 		
 		case FUNC:
@@ -930,10 +1185,20 @@ Node *eval(Node *node, ENVIROMENT *env)
 					return ret;
 				}
 				
-				eval(vnode, new_env);
+				Node *ret_n = eval(vnode, new_env);
+				
+				if(ret_n && ret_n->kind == RETURN)
+				{
+					Node *ret = eval(ret_n->order, new_env);
+					
+					return ret;
+				}
 			}
 			
-			return NULL;
+			Node *ret_node = create_node();
+			ret_node->kind = KRYWORD_NULL; 
+			
+			return ret_node;
 		}
 
 		#define  L (eval(node->left, env))
@@ -1140,6 +1405,25 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 				return bnode;
 			}
+			
+			case NE:
+			{
+				Node* left =  eval(L, env);
+				Node* right = eval(R, env);
+
+				if (left->kind  != right->kind)
+				{
+					printf("error, compare must be the same kind!\n");
+					exit(1);
+				}
+				
+				Node *bnode = create_node();
+
+				bnode->kind  = LOG_BOOL;
+				bnode->state = (int)(left->id != right->id);
+
+				return bnode;
+			}
 		case EQ:
 			{
 				Node* left  = eval(L, env);
@@ -1176,7 +1460,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 	
 		default:
 		{
-			printf("---UNKONW--\n");
+			printf("---unkown kind: %d--\n", node->kind);
 			exit(1);
 		}
 
@@ -1225,6 +1509,15 @@ void interpreter()
 
 				break;
 			}
+			
+			case KEYWORD_WHILE:
+			{
+				Node *node = read_while_exp();
+
+				eval(node, basic_env);
+
+				break;
+			}
 
 			case KEYWORD_DO:
 			{
@@ -1257,7 +1550,7 @@ void interpreter()
 
 			default:
 			{
-				printf("un epxpect kind!\n");
+				printf("un epxpect kind: %d\n", kind);
 				exit(1);
 				break;
 			}
