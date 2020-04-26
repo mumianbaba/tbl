@@ -230,6 +230,7 @@ Node *read_stmt()
 	{
 		case KEYWORD_IF: return  read_if_exp();
 		case KEYWORD_FOR: return read_for_exp();
+		case KEYWORD_WHILE: return read_while_exp();
 		case KEYWORD_DO: return read_dowhile_exp();
 		case LEFT_BRACE: return read_compound_exp();
 
@@ -1031,11 +1032,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 				}
 				 
 			}
-
-			Node *ret_node = create_node();
-			ret_node->kind = KRYWORD_NULL; 
-			
-			return ret_node;
+			break;
 	    }
 
 		case AS:
