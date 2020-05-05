@@ -29,6 +29,15 @@ typedef struct {
     int nalloc;
 } Vector;
 
+typedef struct Map {
+	struct Map *parent;
+	char **key;
+	void **val;
+	int size;
+	int nelem;
+	int nused;
+} Map;
+
 enum
 {
 	NONE,
@@ -39,6 +48,7 @@ enum
 	FUNC,
 	ADD,
 	DE,
+	MOD,
 	SUB,
 	MUL,
 	POW,
@@ -58,6 +68,8 @@ enum
 	COMMA,
 	LEFT_PARENT,
 	RIGHT_PARENT,
+	LEFT_BRACKET,
+	RIGHT_BRACKET,
 	LEFT_BRACE,
 	RIGHT_BRACE,
 	SINGLE_ANNOTATION,
@@ -66,7 +78,10 @@ enum
 	BRACK_LEFT,
 	BRACK_RIGHT,
 	QUOTATION,
+	POINT,
 	IDENT,
+	TABLE,
+	TABLE_DREF,
 	KEYWORD_IF,
 	KEYWORD_FOR,
 	KEYWORD_WHILE,
@@ -119,6 +134,20 @@ typedef struct Node {
 		{
 			struct Node *while_condition;
 			struct Node *while_body;
+		};
+
+		//Table 解引用节点
+		struct
+		{
+			struct Node *header;
+			struct Node *offset;
+		};
+
+		//Table类型节点
+		struct
+		{
+			Vector *arr;
+			Map *hash_map;
 		};
 		
 		struct 

@@ -119,6 +119,22 @@ Node *read_token()
 		
 		return node;
 	}
+
+	if (*src == '[')
+	{
+		++src;
+		node->kind = LEFT_BRACKET;
+
+		return node;
+	}
+
+	if (*src == ']')
+	{
+		++src;
+		node->kind = RIGHT_BRACKET;
+
+		return node; 
+	}
 	
 	if(*src == '{')
 	{
@@ -148,6 +164,14 @@ Node *read_token()
 	{
 		++src;
 		node->kind = DE;
+
+		return node;
+	}
+
+	if (*src == '%')
+	{
+		++src;
+		node->kind = MOD;
 
 		return node;
 	}
@@ -261,6 +285,14 @@ Node *read_token()
 	if (*src == '\"')
 	{
 		node->kind = STRING;
+		++src;
+
+		return node;
+	}
+
+	if (*src == '.')
+	{
+		node->kind = POINT;
 		++src;
 
 		return node;

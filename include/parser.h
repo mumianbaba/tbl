@@ -4,7 +4,6 @@
 #include "env.h"
 #include "lex.h"
 
-Node *read_exp();
 Node *read_var_function();
 Node *read_postfix(Node *node);
 Node *primer_exp();

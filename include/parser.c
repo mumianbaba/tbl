@@ -72,10 +72,116 @@ Node *read_func_call(Node *node)
 		printf("error token\n");
 
 		exit(1);
-		
 	}
 	
 	return node;
+}
+
+Node *read_array_def(Node *node)
+{
+	Node *tok = create_node();
+	tok->kind = TABLE_DREF;
+
+	tok->header = node;
+
+	//需要检查[]里面的内容，follow集 是{indet, string, number}
+	int kind = peek()->kind;
+	if (kind != STRING || kind != IDENT || kind != NUMBER)
+	{
+		printf("error, expect error, got :%d\n", kind);
+
+		exit(1);
+	}
+
+	tok->offset = read_binary();
+
+	return tok;
+}
+
+Node *read_table()
+{
+	Node *tok = get();
+	if (tok->kind != LEFT_BRACKET)
+	{
+		printf("error function name define!");
+		exit(1);
+	}
+
+	Node *node = create_node();
+	node->kind = TABLE;
+
+	Node *ttok = peek();
+	while(ttok->kind != RIGHT_BRACKET)
+	{
+		ttok = peek();
+
+		//table 中只能是a = [x = [], y = [], [], 1, 2, "str"]
+		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT || ttok->kind == LEFT_BRACKET)
+		{
+			if (ttok->kind == NUMBER)
+			{
+				vec_push(node->arr, get());
+			}
+
+			if (ttok->kind == STRING)
+			{
+				Node *stok = get();
+				//假如接下来是 = 则, 当做键值对处理
+				if (peek()->kind == EQ)
+				{
+					unget_token(stok);
+
+					map_put(node->hash_map, ttok->iname, read_binary());
+
+					if (!next_token(END_STM))
+					{
+						printf(" expect; \n");
+						exit(1);
+					}
+					continue;
+				}
+				vec_push(node->arr, stok);
+
+			}
+
+			if (ttok->kind == LEFT_BRACKET)
+			{
+				vec_push(node->arr, read_table());
+			}
+
+			if(ttok->kind == IDENT)
+			{
+				map_put(node->hash_map, ttok->iname, read_binary());
+			}
+			
+			if (!next_token(END_STM))
+			{
+				printf(" expect; \n");
+				exit(1);
+			}
+			continue;
+		}
+	}
+
+	return node;
+}
+
+Node *read_table_def(Node *node)
+{
+	Node *tok = create_node();
+	tok->kind = TABLE_DREF;
+
+	tok->header = node;
+
+	Node *offset = get();
+	if (offset->kind != IDENT)
+	{
+		printf("expect field, but got %d\n", offset->kind);
+		exit(1);
+	}
+	tok->offset = offset;
+
+	return tok;
 }
 
 Node *read_var_function()
@@ -96,22 +202,48 @@ Node *read_var_function()
 
 Node *read_postfix(Node* node)
 {
-	Node *tok = get();
-	if(tok->kind == LEFT_PARENT)
-	{
-		Node *fnode = read_func_call(node);
+	Node *tok;
 
-		if(!next_token(RIGHT_PARENT))
+	while (1)
+	{
+		tok = get();
+		if (tok->kind == LEFT_PARENT)
 		{
-			printf("expect )\n");
-			exit(1);
+			node = read_func_call(node);
+
+			if (!next_token(RIGHT_PARENT))
+			{
+				printf("expect )\n");
+				exit(1);
+			}
+
+			continue;
 		}
 
-		return fnode;
-	}
-	unget_token(tok);
+		if (tok->kind == LEFT_BRACKET)
+		{
+			node = read_array_def(node);
 
-	return node;
+			if (!next_token(RIGHT_BRACKET))
+			{
+				printf("expect ]\n");
+				exit(1);
+			}
+
+			continue;
+		}
+
+		if (tok->kind == POINT)
+		{
+			node = read_table_def(node);
+
+			continue;
+		}
+
+		unget_token(tok);
+
+		return node;
+	}
 }
 
 Node *read_function_name(Node *node)
@@ -592,6 +724,11 @@ Node *primer_exp()
 
 		return node;
 	}
+
+	if (kind == LEFT_BRACKET)
+	{
+		return read_table();
+	}
     
     if(kind == LEFT_PARENT)
     {
@@ -709,7 +846,7 @@ Node *read_add()
 	Node *node = read_mul();
 
     Node *tok = get();
-	while(tok->kind == ADD || tok->kind == DE)
+	while(tok->kind == ADD || tok->kind == DE || tok->kind == MOD)
 	{
 		Node *binary = create_node();
 
@@ -1293,6 +1430,18 @@ Node *eval(Node *node, ENVIROMENT *env)
 				
 				return nvar;
 			}
+
+		case MOD:
+		{
+			Node* left = eval(L, env);
+			Node* right = eval(R, env);
+
+			Node *nvar = create_node();
+			nvar->kind = NUMBER;
+			nvar->id = (int)left->id % (int)right->id;
+
+			return nvar;
+		}
 
 		case MUL:
 			{

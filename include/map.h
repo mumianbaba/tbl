@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "tbl.h"
 
 #define INIT_SIZE 16
 #define TOMBSTONE ((void *)-1)
@@ -11,15 +12,6 @@
 #ifndef UINT32
 #define UINT32 unsigned int
 #endif
-
-typedef struct Map {
-    struct Map *parent;
-    char **key;
-    void **val;
-    int size;
-    int nelem;
-    int nused;
-} Map;
 
 static UINT32 hash(char *p);
 
