@@ -129,24 +129,9 @@ Node *read_table()
 		//table 中只能是a = [x = [], y = [], [], 1, 2, "str"]
 		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT || ttok->kind == LEFT_BRACKET)
 		{
-			if (ttok->kind == NUMBER)
+			if (ttok->kind == NUMBER || ttok->kind == STRING)
 			{
 				vec_push(node->arr, get());
-			}
-
-			if (ttok->kind == STRING)
-			{
-				Node *stok = read_string();
-				//假如接下来是 = 则, 当做键值对处理
-				if (peek()->kind == EQ)
-				{
-					unget_token(stok);
-
-					map_put(node->hash_map, ttok->iname, read_binary());
-
-					continue;
-				}
-				vec_push(node->arr, stok);
 			}
 
 			if (ttok->kind == LEFT_BRACKET)
@@ -156,14 +141,16 @@ Node *read_table()
 
 			if(ttok->kind == IDENT)
 			{
-				map_put(node->hash_map, ttok->iname, read_binary());
+
+				Node *xnode = read_binary();
+
+				map_put(node->hash_map, ttok->iname, xnode);
 			}
 			
 			if (!next_token(COMMA))
 			{
 				continue;
 			}
-
 			
 		}
 	}
@@ -994,6 +981,11 @@ Node *interior_print(Vector *params, ENVIROMENT *env)
 			printf("nil");
 		}
 
+		if (param_node->kind == IDENT)
+		{
+			return interior_print(param_node->sval, env);
+		}
+
 		if (i < count - 1)
 		{
 			printf(" ");
@@ -1118,7 +1110,9 @@ Node *eval(Node *node, ENVIROMENT *env)
 			{
 				Node *node = map_get(header->hash_map, offset->sval);
 
-				return node;
+				Node *indet = eval(node, env);
+
+				return indet->ival;
 			}
 
 			if (offset->kind == NUMBER)
@@ -1134,7 +1128,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 				Node *node = vec_get(header->arr, len);
 
-				return node;
+				return eval(node, env);
 			}
 
 		}
