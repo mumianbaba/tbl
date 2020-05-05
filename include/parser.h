@@ -8,6 +8,7 @@ Node *read_var_function();
 Node *read_postfix(Node *node);
 Node *primer_exp();
 Node *read_pow();
+Node *read_string();
 Node *read_mul();
 Node *read_add();
 Node *read_binary();

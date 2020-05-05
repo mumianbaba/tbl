@@ -86,7 +86,7 @@ Node *read_array_def(Node *node)
 
 	//需要检查[]里面的内容，follow集 是{indet, string, number}
 	int kind = peek()->kind;
-	if (kind != STRING || kind != IDENT || kind != NUMBER)
+	if (kind != STRING && kind != IDENT && kind != NUMBER)
 	{
 		printf("error, expect error, got :%d\n", kind);
 
@@ -110,10 +110,21 @@ Node *read_table()
 	Node *node = create_node();
 	node->kind = TABLE;
 
+	node->arr = make_vector();
+	node->hash_map = make_map();
+
+
+	BOOL state = FALSE;
+
 	Node *ttok = peek();
-	while(ttok->kind != RIGHT_BRACKET)
+	while(1)
 	{
 		ttok = peek();
+
+		if (ttok->kind == RIGHT_BRACKET)
+		{
+			break;
+		}
 
 		//table 中只能是a = [x = [], y = [], [], 1, 2, "str"]
 		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT || ttok->kind == LEFT_BRACKET)
@@ -125,7 +136,7 @@ Node *read_table()
 
 			if (ttok->kind == STRING)
 			{
-				Node *stok = get();
+				Node *stok = read_string();
 				//假如接下来是 = 则, 当做键值对处理
 				if (peek()->kind == EQ)
 				{
@@ -133,15 +144,9 @@ Node *read_table()
 
 					map_put(node->hash_map, ttok->iname, read_binary());
 
-					if (!next_token(END_STM))
-					{
-						printf(" expect; \n");
-						exit(1);
-					}
 					continue;
 				}
 				vec_push(node->arr, stok);
-
 			}
 
 			if (ttok->kind == LEFT_BRACKET)
@@ -154,13 +159,19 @@ Node *read_table()
 				map_put(node->hash_map, ttok->iname, read_binary());
 			}
 			
-			if (!next_token(END_STM))
+			if (!next_token(COMMA))
 			{
-				printf(" expect; \n");
-				exit(1);
+				continue;
 			}
-			continue;
+
+			
 		}
+	}
+
+	if (!next_token(RIGHT_BRACKET))
+	{
+		printf(" expect ] \n");
+		exit(1);
 	}
 
 	return node;
@@ -1083,6 +1094,51 @@ Node *eval(Node *node, ENVIROMENT *env)
 			return node_t;
 		}
 
+		case TABLE_DREF:
+		{
+			Node *header = node->header;
+			if (header != NULL)
+			{
+				header = eval(header, env);
+			}
+			
+			Node *offset = node->offset;
+			if (offset != NULL)
+			{
+				offset = eval(offset, env);
+			}
+
+			if (offset->kind != STRING && offset->kind != NUMBER)
+			{
+				printf("error, cannot use this offset!\n");
+				exit(1);
+			}
+
+			if (offset->kind == STRING)
+			{
+				Node *node = map_get(header->hash_map, offset->sval);
+
+				return node;
+			}
+
+			if (offset->kind == NUMBER)
+			{
+				int len = (int)offset->id;
+
+				int c = vec_len(header->arr);
+
+				if (len > vec_len(header->arr) - 1)
+				{
+					return NULL;
+				}
+
+				Node *node = vec_get(header->arr, len);
+
+				return node;
+			}
+
+		}
+
 		case KEYWORD_IF:
 		{
 			Node *condition = eval(node->node_condition, env);
@@ -1486,6 +1542,11 @@ Node *eval(Node *node, ENVIROMENT *env)
 			return node;
 		}
 		case LOG_BOOL:
+		{
+			return node;
+		}
+
+		case TABLE:
 		{
 			return node;
 		}
