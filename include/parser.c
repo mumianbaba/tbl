@@ -147,11 +147,12 @@ Node *read_table()
 				map_put(node->hash_map, ttok->iname, xnode);
 			}
 			
-			if (!next_token(COMMA))
+			Node *nok = get();
+			if (nok->kind == COMMA)
 			{
 				continue;
 			}
-			
+			unget_token(nok);
 		}
 	}
 
@@ -177,6 +178,29 @@ Node *read_table_def(Node *node)
 		printf("expect field, but got %d\n", offset->kind);
 		exit(1);
 	}
+	tok->offset = offset;
+
+	return tok;
+}
+
+//µãÔËËã
+Node *read_field_def(Node *node)
+{
+	Node *tok = create_node();
+	tok->kind = TABLE_DREF;
+
+	tok->header = node;
+
+	Node *offset = get();
+	if (offset->kind != IDENT)
+	{
+		printf("expect field, but got %d\n", offset->kind);
+		exit(1);
+	}
+
+	offset->kind = STRING;
+	offset->sval = offset->iname;
+
 	tok->offset = offset;
 
 	return tok;
@@ -233,7 +257,7 @@ Node *read_postfix(Node* node)
 
 		if (tok->kind == POINT)
 		{
-			node = read_table_def(node);
+			node = read_field_def(node);
 
 			continue;
 		}
