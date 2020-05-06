@@ -46,6 +46,7 @@ enum
 	BINARY,
 	UNARY,
 	FUNC,
+	FUNC_CALL,
 	ADD,
 	DE,
 	MOD,
@@ -183,10 +184,16 @@ typedef struct Node {
 			struct Node *order;
 		};
 
+		//函数调用节点
+		struct
+		{
+			struct Node *func_point;
+			Vector *formal;
+		};
+
 		struct 
 		{
 			Vector *actual;
-			Vector *formal;
 			struct Node *fbody;
 			struct Node *returning;
 			char *fname;

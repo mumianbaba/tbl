@@ -21,60 +21,55 @@ static INLINE_CALL call_list[] =
 	{"print", interior_print}
 };
 
-//需要支持闭包，while(kind == ()) xxx, 把函数节点拼接起来
+//需要支持闭包，while(kind == ()) xxx
 Node *read_func_call(Node *node)
 {
-	if(peek()->kind == RIGHT_PARENT)
-	{
-		return node;
-	}
 
-	node->formal = make_vector(); //
-	
-	Node *gnode  = map_get(basic_env->map, node->fname);
+	Node *tok = create_node();
 
-	if (gnode == NULL)
-	{
-		printf("error, undefine function :%s\n", node->fname);
+	tok->func_point = node;
 
-		exit(1);
-	}
-	node->actual = gnode->actual;
-	
-	int narg = 0; //用来判断参数的位置 
+	tok->kind = FUNC_CALL;
+
+	tok->formal = make_vector(); //
+
+	Node *ttok = NULL;
+
  	while(1)
 	{
-		if(narg > vec_len(node->actual))
-		{
-			printf("error, argument count!\n");
+		ttok = peek();
 
-			exit(1);
+		if (ttok->kind == RIGHT_PARENT)
+		{
+			break;
 		}
 
-		Node *tok = read_binary();
-		
-		vec_push(node->formal, tok);
-		
-		Node *ttok = get();
-		if(ttok->kind == COMMA)
+		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT)
 		{
-			continue;
-		}
-		
-		if(ttok->kind == RIGHT_PARENT)
-		{
-			unget_token(ttok);
+			vec_push(tok->formal, read_binary());
 
-			return node;
+			ttok = get();
+			
+			if (ttok->kind == COMMA)
+			{
+				continue;
+			}
+
+			if (ttok->kind == RIGHT_PARENT)
+			{
+				unget_token(ttok);
+
+				break;
+			}
 		}
-		
+
 		printf("kind = %d\n", ttok->kind);
 		printf("error token\n");
 
 		exit(1);
 	}
 	
-	return node;
+	return tok;
 }
 
 Node *read_array_def(Node *node)
@@ -211,12 +206,35 @@ Node *read_var_function()
 	Node *tok = get();
 	
 	tok->kind = IDENT;
+
+	if (tok->iname == "def")
+	{
+		return read_function_def();
+	}
 	
 	Node *peek_tok = peek();
 	if(peek_tok->kind == LEFT_PARENT)
 	{
-		tok->kind  = FUNC;
-		tok->fname = tok->iname;
+		Node *fnode = map_get(basic_env->map, tok->iname);
+
+		if (fnode == NULL)
+		{
+			printf("undefined funtion\n");
+			exit(1);
+		}
+		
+		get();
+
+		Node *nnode  = read_func_call(fnode);
+		nnode->fname = tok->iname;
+
+		if (!next_token(RIGHT_PARENT))
+		{
+			printf("expect )\n");
+			exit(1);
+		}
+
+		tok = nnode;
 	}
 
 	return read_postfix(tok);
@@ -273,8 +291,9 @@ Node *read_function_name(Node *node)
 	Node *tok = get();
 	if(tok->kind != IDENT)
 	{
-		printf("error function name define!");
-		exit(1);
+		unget_token(tok);
+
+		return NULL;
 	}
 	
 	Node *fnode = map_get(basic_env->map, tok->iname);
@@ -287,7 +306,7 @@ Node *read_function_name(Node *node)
 	//需要判断是否重定义 
 	node->fname = tok->iname;
 	
-	return tok;
+	return node;
 }
 
 Node *read_function_args(Node *node)
@@ -295,6 +314,13 @@ Node *read_function_args(Node *node)
 	while(1)
 	{
 		Node *tok = get();
+
+		if (tok->kind == RIGHT_PARENT)
+		{
+			unget_token(tok);
+
+			return node;
+		}
 		
 		if(tok->kind != IDENT)
 		{
@@ -310,8 +336,8 @@ Node *read_function_args(Node *node)
 		{
 			continue;
 		}
-		
-		if(tok->kind == RIGHT_PARENT)
+
+		if (tok->kind == RIGHT_PARENT)
 		{
 			unget_token(tok);
 
@@ -611,8 +637,10 @@ Node *read_function_def()
 
 	Node *node    = create_node();
 	node->actual  = make_vector(); 
-	node->formal  = make_vector(); 
+
 	node->fbody   = NULL;
+
+	node->kind = FUNC;
 	
 	read_function_name(node);
 
@@ -634,8 +662,20 @@ Node *read_function_def()
 		exit(1);
 	}
 	
-	map_put(basic_env->map, node->fname, node);
 	node->fbody = read_compound_exp();
+
+	//假如不是匿名函数，则加到变量中
+	if (node->fname != NULL)
+	{
+		Node *inode = create_node();
+		inode->iname = node->fname;
+		inode->ival = node;
+		inode->kind = IDENT;
+
+		map_put(basic_env->map, inode->iname, node);
+
+		return inode;
+	}
 
 	return node;
 }
@@ -1039,9 +1079,13 @@ void init_interior_function()
 {
 	Node *fnode = create_node();
 
+	fnode->kind = FUNC;
+
 	fnode->fname = "print";
 	fnode->actual = make_vector();
-	fnode->formal = make_vector();
+
+	fnode->func_point = NULL;
+
 	map_put(basic_env->map, fnode->fname, fnode);
 }
 
@@ -1147,7 +1191,10 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 				if (len > vec_len(header->arr) - 1)
 				{
-					return NULL;
+					Node *ret_node = create_node();
+					ret_node->kind = KRYWORD_NULL;
+
+					return ret_node;
 				}
 
 				Node *node = vec_get(header->arr, len);
@@ -1155,6 +1202,10 @@ Node *eval(Node *node, ENVIROMENT *env)
 				return eval(node, env);
 			}
 
+			Node *ret_node = create_node();
+			ret_node->kind = KRYWORD_NULL;
+
+			return ret_node;
 		}
 
 		case KEYWORD_IF:
@@ -1182,7 +1233,10 @@ Node *eval(Node *node, ENVIROMENT *env)
 				}
 			}
 
-			break;
+			Node *ret_node = create_node();
+			ret_node->kind = KRYWORD_NULL;
+
+			return ret_node;
 		}
 		
 		case KEYWORD_FOR:
@@ -1220,7 +1274,10 @@ Node *eval(Node *node, ENVIROMENT *env)
 				condition = eval(node->for_condition, env);
 			}
 
-			break;
+			Node *ret_node = create_node();
+			ret_node->kind = KRYWORD_NULL;
+
+			return ret_node;
 		}
 		
 		case KEYWORD_WHILE:
@@ -1255,7 +1312,10 @@ Node *eval(Node *node, ENVIROMENT *env)
 				condition = eval(node->while_condition, env);
 			}
 			
-			break;
+			Node *ret_node = create_node();
+			ret_node->kind = KRYWORD_NULL;
+
+			return ret_node;
 		}
 		
 		case KEYWORD_DO:
@@ -1365,94 +1425,77 @@ Node *eval(Node *node, ENVIROMENT *env)
 			
 			return ret_node;
 		}
-		
-		case FUNC:
+
+		case FUNC_CALL:
 		{
+
 			ENVIROMENT *new_env = make_env();
-			
 			new_env->parent = env;
 
-			Node *fnode = NULL;
-			ENVIROMENT *nenv = env;
-			while (nenv)
-			{
-				fnode = map_get(nenv->map, node->fname);
-				if(fnode)
-				{
-					break;
-				}
+			//假如是内部函数，则直接执行
 
-				if(nenv->parent == NULL)
-				{
-					break;
-				}
-
-				nenv = nenv->parent;
-			}
-
-			if (fnode == NULL)
-			{
-				printf("unkonw function name:%s\n", node->fname);
-				exit(1);
-			}
-			
-			node->actual = fnode->actual;
-
-			node->fbody = fnode->fbody;
-			
-			map_put(new_env->map, node->fname, node);
-			
 			int i = 0;
-			for(i = 0; i < vec_len(node->actual); i++)
-			{
-				char *vname = (char*)vec_get(node->actual, i);
-				Node *vnode = (Node*)vec_get(node->formal, i);
+			if(node->fname != NULL)
+			{ 
+				FUNCTION_POINT func_point = is_interior(node->fname);
 				
+				if (func_point != NULL)
+				{
+					Vector *formal = make_vector();
+					for (i = 0; i < vec_len(node->formal); i++)
+					{
+						Node *vnode = (Node*)vec_get(node->formal, i);
+						vec_push(formal, eval(vnode, env));
+					}
+
+					return func_point(formal, new_env);
+				}
+			}
+
+			//取得函数指针
+			Node *point = eval(node->func_point, env);
+
+			for (i = 0; i < vec_len(point->actual); i++)
+			{
+				char *vname = (char*)vec_get(point->actual, i);
+				Node *vnode = (Node*)vec_get(node->formal, i);
+
 				//先计算节点的值，再存到当前的环境 
 				map_put(new_env->map, vname, eval(vnode, env));
 			}
-			map_put(new_env->map, "return",  node->returning);
+			map_put(new_env->map, "return", node->returning);
 
-			//假如是内部函数，则直接执行
-			FUNCTION_POINT  func_point = is_interior(node->fname);
-			if(func_point != NULL)
-			{ 
-				Vector *formal = make_vector();
-				for (i = 0; i < vec_len(node->formal); i++)
-				{
-					Node *vnode = (Node*)vec_get(node->formal, i);
-					vec_push(formal, eval(vnode, env));
-				}
-
-				return func_point(formal, new_env);
-			}
-			
 			//取出函数的定义执行
-			for(i = 0; i < vec_len(fnode->fbody->body); i++)
+			for (i = 0; i < vec_len(point->fbody->body); i++)
 			{
-				Node *vnode = (Node*)vec_get(fnode->fbody->body, i);
-				
-				if(vnode->kind == RETURN)
+				Node *vnode = (Node*)vec_get(point->fbody->body, i);
+
+				if (vnode->kind == RETURN)
 				{
 					Node *ret = eval(vnode->order, new_env);
-					
+
 					return ret;
 				}
-				
+
 				Node *ret_n = eval(vnode, new_env);
-				
-				if(ret_n && ret_n->kind == RETURN)
+
+				if (ret_n && ret_n->kind == RETURN)
 				{
 					Node *ret = eval(ret_n->order, new_env);
-					
+
 					return ret;
 				}
 			}
-			
+
 			Node *ret_node = create_node();
-			ret_node->kind = KRYWORD_NULL; 
-			
+			ret_node->kind = KRYWORD_NULL;
+
 			return ret_node;
+		}
+		
+		case FUNC:
+		{
+			return node;
 		}
 
 		#define  L (eval(node->left, env))
@@ -1735,6 +1778,11 @@ Node *eval(Node *node, ENVIROMENT *env)
 			exit(1);
 		}
 
+		Node *ret_node = create_node();
+		ret_node->kind = KRYWORD_NULL;
+
+		return ret_node;
+
 	}
 }
 
@@ -1800,7 +1848,6 @@ void interpreter()
 			}
 
 			case IDENT:
-			case FUNC:
 			{
 				Node *node = read_binary();
 

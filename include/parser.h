@@ -5,6 +5,7 @@
 #include "lex.h"
 
 Node *read_var_function();
+Node *read_function_def();
 Node *read_postfix(Node *node);
 Node *primer_exp();
 Node *read_pow();
