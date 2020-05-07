@@ -206,11 +206,6 @@ Node *read_var_function()
 	Node *tok = get();
 	
 	tok->kind = IDENT;
-
-	if (tok->iname == "def")
-	{
-		return read_function_def();
-	}
 	
 	Node *peek_tok = peek();
 	if(peek_tok->kind == LEFT_PARENT)
@@ -837,6 +832,11 @@ Node *primer_exp()
 	if (kind == STRING)
 	{
 		return read_string();
+	}
+	
+	if (kind == KEYWORD_DEF)
+	{
+		return read_function_def();
 	}
 
    printf("error unkown token\n");
