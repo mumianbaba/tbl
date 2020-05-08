@@ -116,7 +116,7 @@ typedef struct Node {
 		struct
 		{
 			//double
-			int fval;
+			double fval;
 		};
 
 		struct

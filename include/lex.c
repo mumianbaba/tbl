@@ -73,7 +73,7 @@ Node *read_number()
 
 	inode->kind = INTEGER;
 
-	inode->id = (int)sum;
+	inode->id = sum;
 
 	return inode;
 }
