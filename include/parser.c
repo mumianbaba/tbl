@@ -757,11 +757,7 @@ Node *primer_exp()
 
     if(kind == NUMBER)
     {
-    	Node *inode = create_node();
-    	inode->kind = NUMBER;
-    	inode->id   = read_number();
-    	
-        return inode;
+    	return read_number();
     }
 
 	if (kind == BOOL_TRUE)
@@ -810,13 +806,26 @@ Node *primer_exp()
         {
             sined = -1;
         }
-        
-        Node *inode = create_node();
-        	
-        inode->kind = NUMBER;
-        inode->id = read_number() * sined;
-        
-        return inode;
+
+		Node *tok = peek();
+		if (tok->kind != NUMBER)
+		{
+			printf("error, expect number, but get: %d", tok->kind);
+
+			exit(1);
+		}
+
+		Node *node = read_number();
+		if (node->kind == INTEGER)
+		{
+			node->id = node->id * sined;
+
+			return node;
+		}
+
+		node->fval = node->fval * sined;
+
+		return node;
     }
     
     if(kind == RETURN)
@@ -1031,10 +1040,16 @@ Node *interior_print(Vector *params, ENVIROMENT *env)
 			printf("%s", param_node->sval);
 		}
 
-		if (param_node->kind == NUMBER)
+		if (param_node->kind == FLOAT)
 		{
-			printf("%f", param_node->id);
+			printf("%f", param_node->fval);
 		}
+
+		if (param_node->kind == INTEGER)
+		{
+			printf("%d", param_node->id);
+		}
+
 		if (param_node->kind == LOG_BOOL)
 		{
 			printf("%s", param_node->state == 1 ? "true": "false");
@@ -1101,9 +1116,14 @@ int convert_node(Node *node)
 		return node->state;
 	}
 
-	if (node->kind == NUMBER)
+	if (node->kind == INTEGER)
 	{
 		return (node->id != 0);
+	}
+
+	if (node->kind == FLOAT)
+	{
+		return (node->fval != 0);
 	}
 
 	if (node->kind == STRING)
@@ -1168,7 +1188,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 				offset = eval(offset, env);
 			}
 
-			if (offset->kind != STRING && offset->kind != NUMBER)
+			if (offset->kind != STRING && offset->kind != INTEGER)
 			{
 				printf("error, cannot use this offset!\n");
 				exit(1);
@@ -1183,9 +1203,9 @@ Node *eval(Node *node, ENVIROMENT *env)
 				return indet->ival;
 			}
 
-			if (offset->kind == NUMBER)
+			if (offset->kind == INTEGER)
 			{
-				int len = (int)offset->id;
+				int len = offset->id;
 
 				int c = vec_len(header->arr);
 
@@ -1525,9 +1545,22 @@ Node *eval(Node *node, ENVIROMENT *env)
 					return nnode;
 				}
 				
-				if (left->kind == NUMBER && right->kind == NUMBER)
+				if (left->kind == FLOAT || right->kind == FLOAT)
 				{
-					nnode->kind = NUMBER;
+					nnode->kind = FLOAT;
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					nnode->fval = left_val + right_val;
+
+					return nnode;
+				}
+
+				if (left->kind == INTEGER && right->kind == INTEGER)
+				{
+					nnode->kind = INTEGER;
 					nnode->id = left->id + right->id;
 
 					return nnode;
@@ -1540,11 +1573,25 @@ Node *eval(Node *node, ENVIROMENT *env)
 			{
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
-				
+
 				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = left->id - right->id;
+
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+					nvar->kind = FLOAT;
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					nvar->fval = left_val - right_val;
+
+					return nvar;
+				}
 				
+				nvar->kind = INTEGER;
+				nvar->id = left->id - right->id;
+
 				return nvar;
 			}
 
@@ -1553,9 +1600,16 @@ Node *eval(Node *node, ENVIROMENT *env)
 			Node* left = eval(L, env);
 			Node* right = eval(R, env);
 
+			if (left->kind != INTEGER || right->kind != INTEGER)
+			{
+				printf("can not mod type\n");
+
+				exit(1);
+			}
+
 			Node *nvar = create_node();
-			nvar->kind = NUMBER;
-			nvar->id = (int)left->id % (int)right->id;
+			nvar->kind = INTEGER;
+			nvar->id = left->id % right->id;
 
 			return nvar;
 		}
@@ -1566,35 +1620,96 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* right = eval(R, env);
 				
 				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = left->id * right->id;
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+					nvar->kind = FLOAT;
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					nvar->fval = left_val * right_val;
+
+					return nvar;
+				}
 				
+				nvar->kind = INTEGER;
+				nvar->id = left->id * right->id;
+
 				return nvar;
 			}
 		case SUB:
 			{
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
-				
+
 				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = left->id / right->id;
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+					nvar->kind = FLOAT;
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					nvar->fval = left_val / right_val;
+
+					return nvar;
+				}
+
+				if ((left->id % right->id) == 0)
+				{
+					nvar->kind = INTEGER;
+					nvar->id = left->id / right->id;
+
+					return nvar;
+				}
+
+				nvar->kind = FLOAT;
+	
+				double left_val  = left->id;
+				double right_val = right->id;
+
+				nvar->fval = left_val / right_val;
 				
 				return nvar;
 			}
 			
 		case POW:
 			{
-				Node* left = eval(L, env);
+				Node* left  = eval(L, env);
 				Node* right = eval(R, env);
-				
+
 				Node *nvar = create_node();
-				nvar->kind = NUMBER;
-				nvar->id = pow(left->id, right->id);
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+					nvar->kind = FLOAT;
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					nvar->fval = pow(left_val, right_val);
+
+					return nvar;
+				}
 				
+				nvar->kind = INTEGER;
+				nvar->id = pow(left->id, right->id);
+
 				return nvar;
 			}
 		case NUMBER:
+		{
+			return node;
+		}
+
+		case INTEGER:
+		{
+			return node;
+		}
+
+		case FLOAT:
 		{
 			return node;
 		}
@@ -1653,14 +1768,33 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != NUMBER || right->kind != NUMBER)
+				if (left->kind != INTEGER || right->kind != INTEGER)
 				{
 					printf("error, compare must be number!\n");
 					exit(1);
 				}
-				Node *bnode = create_node();
 
+
+				if (left->kind != FLOAT || right->kind != FLOAT)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
+
+				Node *bnode = create_node();
 				bnode->kind = LOG_BOOL;
+
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					bnode->state =  left_val < right_val;
+
+					return bnode;
+				}
+
 				bnode->state = left->id < right->id;
 				
 				return bnode;
@@ -1670,15 +1804,32 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != NUMBER || right->kind != NUMBER)
+				if (left->kind != INTEGER || right->kind != INTEGER)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
+
+				if (left->kind != FLOAT || right->kind != FLOAT)
 				{
 					printf("error, compare must be number!\n");
 					exit(1);
 				}
 
 				Node *bnode = create_node();
-
 				bnode->kind = LOG_BOOL;
+
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					bnode->state = left_val > right_val;
+
+					return bnode;
+				}
+
 				bnode->state = left->id > right->id;
 
 				return bnode;
@@ -1688,16 +1839,33 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left  = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != NUMBER || right->kind != NUMBER)
+				if (left->kind != INTEGER || right->kind != INTEGER)
 				{
 					printf("error, compare must be number!\n");
 					exit(1);
 				}
-				
-				Node *bnode = create_node();
 
-				bnode->kind  = LOG_BOOL;
-				bnode->state = (int)(left->id <= right->id);
+				if (left->kind != FLOAT || right->kind != FLOAT)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
+
+				Node *bnode = create_node();
+				bnode->kind = LOG_BOOL;
+
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					bnode->state = left_val <= right_val;
+
+					return bnode;
+				}
+
+				bnode->state = left->id <= right->id;
 
 				return bnode;
 			}
@@ -1706,35 +1874,68 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left =  eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != NUMBER || right->kind != NUMBER)
+				if (left->kind != INTEGER || right->kind != INTEGER)
 				{
 					printf("error, compare must be number!\n");
 					exit(1);
 				}
-				
-				Node *bnode = create_node();
 
-				bnode->kind  = LOG_BOOL;
-				bnode->state = (int)(left->id >= right->id);
+				if (left->kind != FLOAT || right->kind != FLOAT)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
+
+				Node *bnode = create_node();
+				bnode->kind = LOG_BOOL;
+
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					bnode->state = left_val >= right_val;
+
+					return bnode;
+				}
+
+				bnode->state = left->id >= right->id;
 
 				return bnode;
 			}
 			
 			case NE:
 			{
-				Node* left =  eval(L, env);
+				Node* left = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind  != right->kind)
+				if (left->kind != INTEGER || right->kind != INTEGER)
 				{
-					printf("error, compare must be the same kind!\n");
+					printf("error, compare must be number!\n");
 					exit(1);
 				}
-				
-				Node *bnode = create_node();
 
-				bnode->kind  = LOG_BOOL;
-				bnode->state = (int)(left->id != right->id);
+				if (left->kind != FLOAT || right->kind != FLOAT)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
+
+				Node *bnode = create_node();
+				bnode->kind = LOG_BOOL;
+
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					bnode->state = left_val != right_val;
+
+					return bnode;
+				}
+
+				bnode->state = left->id != right->id;
 
 				return bnode;
 			}
@@ -1764,8 +1965,31 @@ Node *eval(Node *node, ENVIROMENT *env)
 					}
 				}
 
-				bnode->state = (int)(left->id == right->id);
-				
+				if (left->kind != INTEGER || right->kind != INTEGER)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
+
+				if (left->kind != FLOAT || right->kind != FLOAT)
+				{
+					printf("error, compare must be number!\n");
+					exit(1);
+				}
+
+				if (left->kind == FLOAT || right->kind == FLOAT)
+				{
+
+					double left_val = (left->kind == INTEGER) ? left->id : left->fval;
+					double right_val = (right->kind == INTEGER) ? right->id : right->fval;
+
+					bnode->state = left_val == right_val;
+
+					return bnode;
+				}
+
+				bnode->state = left->id == right->id;
+
 				return bnode;
 			}
 

@@ -43,6 +43,8 @@ enum
 	NONE,
 	STRING,
 	NUMBER,
+	INTEGER,
+	FLOAT,
 	BINARY,
 	UNARY,
 	FUNC,
@@ -108,7 +110,13 @@ typedef struct Node {
 		struct
 		{
 			//double
-			double id; 
+			int id; 
+		};
+
+		struct
+		{
+			//double
+			int fval;
 		};
 
 		struct

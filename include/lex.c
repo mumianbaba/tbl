@@ -36,7 +36,7 @@ const char *skip_block(const char *data, const char *start, const char *end)
 	return s2;
 }
 
-double read_number()
+Node *read_number()
 {
 	double sum = 0;
 	while(isdigit(*src))
@@ -46,6 +46,9 @@ double read_number()
 	}
 
 	double sub = 0;
+
+	Node *inode = create_node();
+
 	//假如下一个是.那么是浮点数，开始计算下面的数字
 	if(*src == '.')
 	{
@@ -61,9 +64,18 @@ double read_number()
 		}
 
 		sub = sub * pow(10.0, sign);
+
+		inode->kind = FLOAT;
+		inode->fval = sum + sub;
+
+		return inode;
 	}
 
-	return sum + sub;
+	inode->kind = INTEGER;
+
+	inode->id = (int)sum;
+
+	return inode;
 }
 
 char *read_keyword()
@@ -300,7 +312,6 @@ Node *read_token()
 	
 	if(isdigit(*src))
 	{
-		node->id = read_number();
 		node->kind = NUMBER;
 
 		return node;
