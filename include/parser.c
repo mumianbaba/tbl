@@ -1528,12 +1528,6 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 				Node *nnode = create_node();
 
-				if (left->kind != right->kind)
-				{
-					printf("can not add to operator!\n");
-					exit(1);
-				}
-
 				if (left->kind == STRING && right->kind == STRING)
 				{
 					nnode->kind = STRING;
