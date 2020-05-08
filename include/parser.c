@@ -1768,17 +1768,13 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != INTEGER || right->kind != INTEGER)
+				if (left->kind != INTEGER && right->kind != INTEGER)
 				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
-
-
-				if (left->kind != FLOAT || right->kind != FLOAT)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
+					if (left->kind != FLOAT && right->kind != FLOAT)
+					{
+						printf("error, compare must be number!\n");
+						exit(1);
+					}
 				}
 
 				Node *bnode = create_node();
@@ -1804,16 +1800,13 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != INTEGER || right->kind != INTEGER)
+				if (left->kind != INTEGER && right->kind != INTEGER)
 				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
-
-				if (left->kind != FLOAT || right->kind != FLOAT)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
+					if (left->kind != FLOAT && right->kind != FLOAT)
+					{
+						printf("error, compare must be number!\n");
+						exit(1);
+					}
 				}
 
 				Node *bnode = create_node();
@@ -1839,16 +1832,13 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left  = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != INTEGER || right->kind != INTEGER)
+				if (left->kind != INTEGER && right->kind != INTEGER)
 				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
-
-				if (left->kind != FLOAT || right->kind != FLOAT)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
+					if (left->kind != FLOAT && right->kind != FLOAT)
+					{
+						printf("error, compare must be number!\n");
+						exit(1);
+					}
 				}
 
 				Node *bnode = create_node();
@@ -1874,16 +1864,13 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left =  eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != INTEGER || right->kind != INTEGER)
+				if (left->kind != INTEGER && right->kind != INTEGER)
 				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
-
-				if (left->kind != FLOAT || right->kind != FLOAT)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
+					if (left->kind != FLOAT && right->kind != FLOAT)
+					{
+						printf("error, compare must be number!\n");
+						exit(1);
+					}
 				}
 
 				Node *bnode = create_node();
@@ -1908,22 +1895,26 @@ Node *eval(Node *node, ENVIROMENT *env)
 			{
 				Node* left = eval(L, env);
 				Node* right = eval(R, env);
-
-				if (left->kind != INTEGER || right->kind != INTEGER)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
-
-				if (left->kind != FLOAT || right->kind != FLOAT)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
-
+				
 				Node *bnode = create_node();
 				bnode->kind = LOG_BOOL;
+				if (left->kind != right->kind)
+				{
+					bnode->state = 1;
+					
+					return bnode;
+				}
+				
+				if (left->kind == STRING)
+				{
+					if (strcmp(left->sval, right->sval) != 0)
+					{
+						bnode->state = 1;
 
+						return bnode;
+					}
+				}
+				
 				if (left->kind == FLOAT || right->kind == FLOAT)
 				{
 
@@ -1944,17 +1935,17 @@ Node *eval(Node *node, ENVIROMENT *env)
 				Node* left  = eval(L, env);
 				Node* right = eval(R, env);
 
-				if (left->kind != right->kind)
-				{
-					printf("error, can not compare kind!\n");
-					exit(1);
-				}
-				
 				Node *bnode = create_node();
 
 				bnode->kind = LOG_BOOL;
-				bnode->state = 0;
 
+				if (left->kind != right->kind)
+				{
+					bnode->state = 0;
+					
+					return bnode;
+				}
+				
 				if (left->kind == STRING)
 				{
 					if (strcmp(left->sval, right->sval) == 0)
@@ -1965,17 +1956,6 @@ Node *eval(Node *node, ENVIROMENT *env)
 					}
 				}
 
-				if (left->kind != INTEGER || right->kind != INTEGER)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
-
-				if (left->kind != FLOAT || right->kind != FLOAT)
-				{
-					printf("error, compare must be number!\n");
-					exit(1);
-				}
 
 				if (left->kind == FLOAT || right->kind == FLOAT)
 				{
