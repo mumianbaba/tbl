@@ -122,7 +122,7 @@ Node *read_table()
 		}
 
 		//table 中只能是a = [x = [], y = [], [], 1, 2, "str"]
-		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT || ttok->kind == LEFT_BRACKET)
+		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT || ttok->kind == LEFT_BRACKET || ttok->kind == KEYWORD_DEF)
 		{
 			if (ttok->kind == NUMBER || ttok->kind == STRING)
 			{
@@ -138,10 +138,21 @@ Node *read_table()
 
 			if(ttok->kind == IDENT)
 			{
+					Node *xnode = read_binary();
+					if (xnode->kind == AS)
+					{
+						map_put(node->hash_map, xnode->left->iname, xnode);
+					}
+					else
+					{
+						vec_push(node->arr, xnode);
+					}
+			}
 
-				Node *xnode = read_binary();
-
-				map_put(node->hash_map, ttok->iname, xnode);
+			if (ttok->kind == KEYWORD_DEF)
+			{
+				Node *xnode = read_function_def();
+				vec_push(node->arr, xnode);
 			}
 			
 			Node *nok = get();
