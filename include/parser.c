@@ -658,8 +658,6 @@ Node *read_function_def()
 
 		exit(1);
 	}
-	
-	node->fbody = read_compound_exp();
 
 	//假如不是匿名函数，则加到变量中
 	if (node->fname != NULL)
@@ -671,8 +669,12 @@ Node *read_function_def()
 
 		map_put(basic_env->map, inode->iname, node);
 
+		node->fbody = read_compound_exp();
+
 		return inode;
 	}
+	
+	node->fbody = read_compound_exp();
 
 	return node;
 }
