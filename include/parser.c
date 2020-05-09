@@ -160,7 +160,15 @@ Node *read_table()
 			{
 				continue;
 			}
-			unget_token(nok);
+
+			if (nok->kind == RIGHT_BRACKET)
+			{
+				unget_token(nok);
+				break;
+			}
+
+			printf(" un expect token: %d", nok->kind);
+			exit(1);
 		}
 	}
 
