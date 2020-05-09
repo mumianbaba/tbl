@@ -44,7 +44,7 @@ Node *read_func_call(Node *node)
 			break;
 		}
 
-		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT)
+		if (ttok->kind == NUMBER || ttok->kind == STRING || ttok->kind == IDENT || ttok->kind ==  LOG_NOT || ttok->kind == ADD || ttok->kind == DE)
 		{
 			vec_push(tok->formal, read_binary());
 
@@ -126,7 +126,9 @@ Node *read_table()
 		{
 			if (ttok->kind == NUMBER || ttok->kind == STRING)
 			{
-				vec_push(node->arr, get());
+				Node *ntok = read_binary();
+
+				vec_push(node->arr, ntok);
 			}
 
 			if (ttok->kind == LEFT_BRACKET)
@@ -807,7 +809,9 @@ Node *primer_exp()
             sined = -1;
         }
 
-		Node *tok = peek();
+		get();
+
+		Node *tok = get();
 		if (tok->kind != NUMBER)
 		{
 			printf("error, expect number, but get: %d", tok->kind);
@@ -1386,12 +1390,12 @@ Node *eval(Node *node, ENVIROMENT *env)
 			}
 
 			Node *right = eval(node->right, env);
-	
+
 			if(node->left->kind != IDENT)
 			{
-				printf("error left operortor error\n");
+				Node *left = eval(node->left, env);
 
-				exit(1);
+				left->kind = IDENT;
 			}
 
 			ENVIROMENT *nenv = env;
