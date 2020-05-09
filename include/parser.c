@@ -1379,6 +1379,13 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 		case AS:
 		{
+			
+			if(node->left->kind != TABLE_DREF && node->left->kind != IDENT)
+			{
+				printf(" can not use this left operator!\n", node->left->kind);
+				exit(1);
+			}
+
 			if(node->right->kind == KRYWORD_NULL)
 			{
 				printf(" %s = null !", (node->left->iname));
@@ -1393,11 +1400,53 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 			Node *right = eval(node->right, env);
 
-			if(node->left->kind != IDENT)
+			if(node->left->kind == TABLE_DREF)
 			{
-				Node *left = eval(node->left, env);
+				Node *header = node->left->header;
+				if (header != NULL)
+				{
+					header = eval(header, env);
+				}
+				
+				Node *offset = node->left->offset;
+				if (offset != NULL)
+				{
+					offset = eval(offset, env);
+				}
 
-				left->kind = IDENT;
+				if (offset->kind != STRING && offset->kind != INTEGER)
+				{
+					printf("error, cannot use this offset!\n");
+					exit(1);
+				}
+
+				if (offset->kind == STRING)
+				{
+					map_put(header->hash_map, offset->sval, right);
+
+					return right;
+				}
+
+				if (offset->kind == INTEGER)
+				{
+					int len = offset->id;
+
+					int count = vec_len(header->arr);
+					if (len > count)
+					{
+						printf("can not push this object!\n");
+						exit(1);
+					}
+
+					if (len == count)
+					{
+						vec_push(header->arr, right);
+					}
+
+					vec_set(header->arr, len, right);
+
+					return right;
+				}
 			}
 
 			ENVIROMENT *nenv = env;
@@ -1955,7 +2004,6 @@ Node *eval(Node *node, ENVIROMENT *env)
 						return bnode;
 					}
 				}
-
 
 				if (left->kind == FLOAT || right->kind == FLOAT)
 				{
