@@ -1217,7 +1217,7 @@ Node *eval(Node *node, ENVIROMENT *env)
 
 				Node *indet = eval(node, env);
 
-				return indet->ival;
+				return eval(indet, env);
 			}
 
 			if (offset->kind == INTEGER)
@@ -1531,7 +1531,10 @@ Node *eval(Node *node, ENVIROMENT *env)
 					for (i = 0; i < vec_len(node->formal); i++)
 					{
 						Node *vnode = (Node*)vec_get(node->formal, i);
-						vec_push(formal, eval(vnode, env));
+
+						Node *tnode = eval(vnode, env);
+
+						vec_push(formal, tnode);
 					}
 
 					return func_point(formal, new_env);
