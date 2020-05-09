@@ -6,10 +6,17 @@
 
 int main(int argc, char** argv)
 {
-	FILE *fp = fopen("./test.tbl", "rb");
+	if (argc != 2)
+	{
+		printf("usage: ./interpreter xx.tbl \n");
+
+		return -1;
+	}
+
+	FILE *fp = fopen(argv[1], "rb");
 	if(!fp)
 	{
-		printf("read file error\n");
+		printf("read file :%s error\n", argv[1]);
 		
 		return -1;
 	}
