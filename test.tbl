@@ -1,74 +1,182 @@
-// test fb function
+tab = [[ z = "hello world"]];
+print("test table 1111111111111111----------->");
 
-print("---------- test fb function --------------");
-def fb(n)
+tab = [x = 1, y = [ z = "hello world"]];
+
+print(tab.x, tab["x"]);
+
+print(tab.x, tab["x"]);
+print(tab.y.z, tab["y"].z, tab["y"]["z"]);
+
+tab.x = "hello";
+tab.y["z"] = "ssssss";
+print(tab.y["z"]);
+
+print(tab.x);
+print(tab["x"]);
+
+tab.x = 1;
+
+print(tab.x, tab["x"]);
+
+print("--------------------table222222222222222");
+tab = ["1", 2, a = [x = 1, y = 2], [x = 3, y = 4]];
+print(tab[2].x, tab[2].y);
+print(tab[2]["x"], tab[2]["y"]);
+
+a = [def func(n){return n;}]
+print(a[0](1));
+
+a[0] = "hello";
+a[1] = "world";
+
+print(a[0], a[1]);
+print("test ---- mod");
+
+a = 3 % 4;
+print(a);
+
+a = 4 % 2;
+print(a);
+
+def abc(n)
 {
 	if(n == 1 or n == 2)
 	{
-	   return n;
+		return n;
 	}
-
-   return fb(n - 1) + fb(n - 2);
+	
+	return abc(n -1 ) + abc(n - 2);
 }
 
-n = fb(5);
-print("n=", n);
+print("1111111");
 
-print("---------- test while --------------");
+print(abc(5));
 
-//test while
+tab = ["1", 2, a = [x = 1, y = 2], [x = 3, y = 4]];
 
-n = 100;
-while(n>0)
+a = def test(n)
 {
-   print("n", n);
+	return 100;
+}
+tab2 = [a];
+
+print("aaa");
+
+a = tab2[0](1);
+print(a);
+
+print(tab[0], tab[1]);
+
+print(tab[2].x, tab[2].y);
+print(tab[2]["x"], tab[2]["y"]);
+
+print(tab.a.x);
+print(tab.a["x"]);
+print(tab["a"].x);
+print(tab["a"]["x"]);
+
+print("hello world!");
+
+print("test number--------------------");
+print(1);
+print(2);
+
+print( 1 + 2);
+print( 1 + 100.123);
+
+print("test calc-------------------");
+
+a = 1 * 2 + 0.5 * 2 + 2^4 + 10 / 5 + (100 / 2);
+print(a);
+
+print("test string----------------");
+
+print("hello");
+print("hello" + "world");
+
+print("test---function---");
+
+abc = def(n)
+{
+   sum = 0;
+   i = 0;
+   while(i < n)
+   {
+	   sum = sum + i;
+	   
+	   i = i + 1;
+   }
    
-   n = n -1;
+   return sum;
 }
 
-print("--------test do while----------------");
+print(abc(100.1));
 
-//test do while
 
-n = 100;
+print("test for expression--------------");
+
+for(i = 0; i < 100; i = i + 1)
+print("i = ", i);
+
+print("test do while expression--------------");
+
+i = 0;
 do
 {
-   print("n", n);
-   n = n-1;
-}while(n < 0);
+   i = i + 1;
+}while(i > 100);
 
+print("------test if----")
 
-
-print("------------ test for ------------");
-//test for
-for(i = 0; i < 100; i = i + 1)
+i = 100;
+if(i < 3)
 {
-   print("i", i);
+	print("true");
+}
+else
+{
+   print("false");
 }
 
+print("----test logic ------------");
 
-print("---------- test string --------------");
-//test string
+a = true;
+b = false;
+print(not a);
+print(not b);
+print(a and b);
+print(a or b);
+print(not a and b);
+print(not a and not b);
+print(not a or not b);
 
-str = "hello" + "world!";
-print("str", str);
+print("test compare-------");
 
-//test if
-print("--------- test if ---------------");
+a = 1
+b = 2;
 
-if(true)
-{
-	print("hello");
-}
+print(a> b);
+print(a < b);
+print(a == b);
+print(a <> b);
 
-//test logic
-print("----------test logic--------------");
+print("test compare222-------");
 
-a = 1 > 3 or 2 < 4;
-print(a);
+a = 1;
+b = 1.123;
 
-a = 1 < 3 and 3 > 4;
-print(a);
+print(a> b);
+print(a < b);
+print(a == b);
+print(a <> b);
 
-print("test finished!----");
+print("test compare333-------");
 
+a = 1;
+b = -1.123;
+
+print(a> b);
+print(a < b);
+print(a == b);
+print(a <> b);
